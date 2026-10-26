@@ -1,0 +1,31 @@
+# Render Blueprint: backend web service + PostgreSQL. See docs/DEPLOY.md.
+services:
+  - type: web
+    name: sahab-api
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sahab-db
+          property: connectionString
+      # Your Vercel URL, e.g. https://sahab.vercel.app (set it in the dashboard after the first Vercel deploy).
+      - key: CORS_ORIGINS
+        sync: false
+      - key: RATE_LIMIT_PER_MIN
+        value: "120"
+      - key: TRUST_PROXY
+        value: "1"
+
+databases:
+  - name: sahab-db
+    plan: free
+    databaseName: sahab
+    user: sahab

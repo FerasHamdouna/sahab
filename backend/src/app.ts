@@ -30,12 +30,13 @@ export interface AppDeps {
   cache: Cache;
   corsOrigins: string[];
   rateLimitPerMin: number;
+  trustProxy?: number;
 }
 
-export function createApp({ service, cache, corsOrigins, rateLimitPerMin }: AppDeps) {
+export function createApp({ service, cache, corsOrigins, rateLimitPerMin, trustProxy = 1 }: AppDeps) {
   const app = express();
   app.disable('x-powered-by');
-  app.set('trust proxy', 1);
+  app.set('trust proxy', trustProxy);
   app.use(cors({ origin: corsOrigins, methods: ['GET'] }));
 
   app.get('/api/health', (_req, res) => {

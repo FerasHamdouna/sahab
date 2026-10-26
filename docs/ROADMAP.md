@@ -93,7 +93,10 @@
 
 ---
 
-## المرحلة 4 — الإطلاق 🚀
+## المرحلة 4 — الإطلاق 🚀 ← *التالي*
+- [x] Git + أول commit
+- [x] ملفات النشر: `render.yaml` + `frontend/vercel.json` + [DEPLOY.md](DEPLOY.md)
+- [ ] رفع المستودع على GitHub
 - [ ] Deploy (فرونت + باك)
 - [ ] دومين + HTTPS
 - [ ] SEO أساسي + Open Graph image

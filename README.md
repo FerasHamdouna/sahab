@@ -15,6 +15,7 @@
 | [docs/ROADMAP.md](docs/ROADMAP.md) | المراحل ومعايير الانتهاء |
 | [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) | الألوان، الخطوط، المسافات، الحركة، المكونات |
 | [design/prototype.html](design/prototype.html) | النموذج التفاعلي للواجهة |
+| [docs/DEPLOY.md](docs/DEPLOY.md) | النشر: Vercel (فرونت) + Render (باك + PostgreSQL) |
 
 ## 🗺️ الحالة
 

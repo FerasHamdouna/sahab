@@ -8,6 +8,8 @@ export const config = {
   corsOrigins: (process.env.CORS_ORIGINS ?? 'http://localhost:5173,http://localhost:4173')
     .split(',').map((s) => s.trim()).filter(Boolean),
   rateLimitPerMin: num(process.env.RATE_LIMIT_PER_MIN, 120),
+  /** Proxy hops in front of the app (Render/Railway = 1), so rate limiting sees the real client IP. */
+  trustProxy: num(process.env.TRUST_PROXY, 1),
   /** Cache lifetimes, docs/API_CONTRACT.md §5. */
   ttl: {
     weatherSec: 10 * 60,

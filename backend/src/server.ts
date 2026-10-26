@@ -9,7 +9,7 @@ const pool = await connectDb(config.databaseUrl);
 if (pool) startCacheJanitor(pool);
 const cache = createCache(pool);
 const service = createWeatherService(openMeteo, cache);
-const app = createApp({ service, cache, corsOrigins: config.corsOrigins, rateLimitPerMin: config.rateLimitPerMin });
+const app = createApp({ service, cache, corsOrigins: config.corsOrigins, rateLimitPerMin: config.rateLimitPerMin, trustProxy: config.trustProxy });
 
 const server = app.listen(config.port, () => {
   console.log(`[api] Sahab backend on http://localhost:${config.port} (provider: ${openMeteo.name}, cache: ${pool ? 'memory + PostgreSQL' : 'memory'})`);
