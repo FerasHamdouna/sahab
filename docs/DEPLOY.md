@@ -12,7 +12,7 @@
 
 الملفات الجاهزة في المشروع:
 - [`render.yaml`](../render.yaml): الباك إند + قاعدة البيانات على Render بضغطة وحدة (Blueprint).
-- [`frontend/vercel.json`](../frontend/vercel.json): إعدادات Vercel + كاش طويل لملفات `assets`.
+- [`vercel.json`](../vercel.json) بجذر المستودع: يبني `frontend/` وينشر `frontend/dist` + كاش طويل لملفات `assets` (فما في داعي تختار Root Directory).
 
 ---
 
@@ -47,7 +47,7 @@ git push -u origin main
 ## 2. الفرونت إند على Vercel
 
 1. https://vercel.com/new ← **Import** مستودع `sahab`.
-2. **Root Directory**: اختار `frontend` (مهم).
+2. **Root Directory**: خليه `./` (الجذر). ملف `vercel.json` بالجذر بيبني مجلد `frontend` لحاله.
 3. Framework بيتعرّف لحاله: **Vite**.
 4. **Environment Variables**:
 
