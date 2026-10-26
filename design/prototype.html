@@ -1,0 +1,1379 @@
+<title>نموذج سحاب</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alexandria:wght@500;600&family=Readex+Pro:wght@200;300;400;500;600&display=swap">
+<style>
+/* Layout: full-bleed live sky canvas; temperature sits on the sky, glass panels float over it.
+   Desktop = two columns (hero + details | 7-day pinned to bottom so the sun stays visible). */
+:root {
+  --ink: #F5F8FD;
+  --ink-2: rgba(240, 245, 252, .74);
+  --ink-3: rgba(240, 245, 252, .54);
+  --glass-a: .30;
+  --glass: rgba(12, 18, 34, var(--glass-a));
+  --glass-strong: rgba(12, 18, 34, calc(var(--glass-a) + .22));
+  --line: rgba(255, 255, 255, .14);
+  --line-2: rgba(255, 255, 255, .08);
+  --hover: rgba(255, 255, 255, .10);
+  --sun: #FFC873;
+  --rain: #8FD3FF;
+  --danger: #FF9C9C;
+  --ground: #0B1220;
+  --font-display: "Alexandria", "Readex Pro", system-ui, "Segoe UI", Tahoma, sans-serif;
+  --font-ui: "Readex Pro", system-ui, "Segoe UI", Tahoma, sans-serif;
+  --r-card: 24px;
+  --r-ctl: 14px;
+  --ease: cubic-bezier(.2, .7, .2, 1);
+  --shadow-text: 0 2px 24px rgba(0, 0, 0, .28);
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 16px;
+  line-height: 1.5;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--sun); outline-offset: 2px; }
+p, h1, h2, ul { margin: 0; padding: 0; }
+ul { list-style: none; }
+.n { direction: ltr; unicode-bidi: isolate; display: inline-block; font-variant-numeric: tabular-nums; }
+.i { flex: none; }
+
+#sky { position: fixed; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; }
+
+.stage {
+  position: relative; z-index: 1; min-height: 100%;
+  padding-block: 16px 104px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; justify-content: center; box-sizing: border-box;
+}
+.app {
+  container-type: inline-size;
+  width: 100%; max-width: 1240px;
+  display: flex; flex-direction: column; gap: 20px;
+  transition: max-width .5s var(--ease);
+}
+body.phone .app {
+  max-width: 390px; min-height: 800px; box-sizing: border-box;
+  padding: 18px 14px 28px; border-radius: 44px;
+  border: 1px solid var(--line); background: rgba(0, 0, 0, .10);
+  box-shadow: 0 40px 100px rgba(0, 0, 0, .45), inset 0 0 0 6px rgba(255, 255, 255, .03);
+}
+
+.glass {
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  backdrop-filter: blur(22px) saturate(150%);
+  border: 1px solid var(--line);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 10px 40px rgba(0, 0, 0, .16);
+  transition: background-color 1.2s ease;
+}
+
+/* ---------- header ---------- */
+.top { display: flex; align-items: center; gap: 12px; }
+.brand {
+  font-family: var(--font-display); font-weight: 600; font-size: 22px;
+  display: flex; align-items: center; gap: 10px; white-space: nowrap;
+  text-shadow: var(--shadow-text);
+}
+.brand-mark { width: 30px; height: 30px; }
+.search { position: relative; flex: 1; max-width: 560px; margin-inline: auto; }
+.search input {
+  width: 100%; height: 48px; box-sizing: border-box;
+  border-radius: var(--r-ctl); padding-inline: 46px 16px;
+  outline-offset: 0;
+}
+.search input::placeholder { color: var(--ink-3); }
+#searchIco { position: absolute; inset-inline-start: 0; top: 0; height: 100%; width: 48px; display: grid; place-items: center; color: var(--ink-2); pointer-events: none; }
+.search > .i { position: absolute; inset-inline-start: 15px; top: 50%; translate: 0 -50%; color: var(--ink-2); pointer-events: none; }
+.suggest {
+  position: absolute; top: calc(100% + 8px); inset-inline: 0; z-index: 30;
+  border-radius: 18px; padding: 6px; background: var(--glass-strong);
+  transform-origin: top; animation: pop .18s var(--ease);
+}
+.suggest[hidden] { display: none; }
+@keyframes pop { from { opacity: 0; transform: translateY(-4px) scale(.98); } }
+.suggest .hd { font-size: 12px; color: var(--ink-3); padding: 8px 12px 4px; }
+.opt {
+  display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; cursor: pointer;
+}
+.opt[aria-selected="true"], .opt:hover { background: var(--hover); }
+.opt .flag { font-size: 11px; font-weight: 600; letter-spacing: .06em; min-width: 30px; height: 22px; display: grid; place-items: center; border-radius: 6px; background: rgba(255,255,255,.1); color: var(--ink-2); }
+.opt .nm { font-weight: 500; }
+.opt .ct { color: var(--ink-3); font-size: 14px; }
+.opt .tp { margin-inline-start: auto; color: var(--ink-2); display: flex; align-items: center; gap: 6px; font-size: 14px; }
+.empty { padding: 14px 12px; color: var(--ink-2); font-size: 14px; }
+
+.actions { display: flex; gap: 8px; align-items: center; }
+.icon-btn {
+  width: 48px; height: 48px; border-radius: var(--r-ctl);
+  display: grid; place-items: center; position: relative;
+  transition: background-color .2s var(--ease), transform .15s var(--ease);
+}
+.icon-btn:hover { background: var(--glass-strong); }
+.icon-btn:active { transform: scale(.95); }
+.icon-btn .dot { position: absolute; top: 9px; inset-inline-end: 9px; width: 7px; height: 7px; border-radius: 50%; background: var(--sun); box-shadow: 0 0 0 3px rgba(255,200,115,.25); }
+.icon-btn.spin .i { animation: spin 1s linear infinite; }
+@keyframes spin { to { rotate: 360deg; } }
+.seg { display: flex; height: 48px; border-radius: var(--r-ctl); padding: 4px; box-sizing: border-box; gap: 2px; }
+.seg button { border: 0; background: none; border-radius: 10px; padding-inline: 10px; min-width: 40px; font-size: 14px; color: var(--ink-2); transition: background-color .2s var(--ease), color .2s; }
+.seg button[aria-pressed="true"] { background: rgba(255,255,255,.16); color: var(--ink); }
+.lang-btn { font-weight: 600; font-size: 14px; }
+
+@container (max-width: 720px) {
+  .top { flex-wrap: wrap; }
+  .brand { flex: 1; }
+  .search { order: 3; flex-basis: 100%; max-width: none; }
+}
+
+/* ---------- notices ---------- */
+.notice {
+  border-radius: 18px; padding: 14px 16px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+  animation: pop .25s var(--ease);
+}
+.notice .txt { flex: 1 1 260px; min-width: 0; }
+.notice .ttl { font-weight: 500; }
+.notice .body { color: var(--ink-2); font-size: 14px; }
+.notice.err .i { color: var(--danger); }
+.notice .btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn {
+  height: 44px; padding-inline: 16px; border-radius: 12px; border: 1px solid var(--line);
+  background: rgba(255,255,255,.08); display: inline-flex; align-items: center; gap: 8px; font-size: 14px;
+  transition: background-color .2s var(--ease);
+}
+.btn:hover { background: rgba(255,255,255,.16); }
+.btn.primary { background: var(--ink); color: #0E1626; border-color: transparent; font-weight: 500; }
+.btn.primary:hover { background: #fff; }
+.btn.ghost { border-color: transparent; background: none; color: var(--ink-2); }
+
+/* ---------- main grid ---------- */
+.main { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 20px; align-items: stretch; }
+.col-a { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.col-b { display: flex; flex-direction: column; justify-content: flex-end; min-width: 0; }
+@container (max-width: 900px) {
+  .main { grid-template-columns: minmax(0, 1fr); }
+}
+@container (max-width: 520px) {
+  .main, .col-a, .app { gap: 12px; }
+}
+
+/* ---------- hero ---------- */
+.hero { position: relative; isolation: isolate; padding-block: 28px 4px; text-shadow: var(--shadow-text); display: flex; flex-direction: column; gap: 6px; }
+/* soft scrim behind text that only darkens on bright skies (snow, clear noon) to keep 4.5:1 */
+.hero::before {
+  content: ""; position: absolute; inset: -30px -80px -30px -40px; z-index: -1; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(8, 12, 22, var(--scrim, 0)), rgba(8, 12, 22, 0));
+  transition: --scrim 1.2s;
+}
+.place { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.place h1 { font-family: var(--font-display); font-weight: 600; font-size: 28px; line-height: 1.2; }
+.chip { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; padding: 4px 10px; border-radius: 999px; background: rgba(255,255,255,.14); text-shadow: none; }
+.home-btn {
+  display: inline-flex; align-items: center; gap: 6px; height: 34px; padding-inline: 12px; border-radius: 999px;
+  border: 1px solid var(--line); background: rgba(255,255,255,.06); font-size: 13px; color: var(--ink-2); text-shadow: none;
+  transition: background-color .2s, color .2s;
+}
+.home-btn:hover { background: rgba(255,255,255,.14); color: var(--ink); }
+.home-btn[aria-pressed="true"] { color: var(--sun); border-color: rgba(255,200,115,.35); }
+.home-btn[aria-pressed="true"] .i { fill: var(--sun); }
+.meta { color: var(--ink-2); font-size: 15px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.demo { font-size: 11px; padding: 2px 8px; border-radius: 999px; border: 1px dashed rgba(255,255,255,.3); color: var(--ink-3); text-shadow: none; }
+.temp { font-weight: 200; font-size: clamp(88px, 16cqi, 168px); line-height: .95; letter-spacing: -.045em; margin-block: 8px 2px; }
+.cond { display: flex; align-items: center; gap: 12px; font-size: 22px; }
+.sub { display: flex; gap: 18px; flex-wrap: wrap; color: var(--ink-2); font-size: 15px; }
+.sub b { color: var(--ink); font-weight: 400; }
+@container (max-width: 520px) {
+  .hero { padding-block: 12px 0; }
+  .place h1 { font-size: 24px; }
+  .cond { font-size: 19px; }
+}
+
+/* ---------- cards ---------- */
+.card { border-radius: var(--r-card); padding: 20px; min-width: 0; }
+.card h2 { font-size: 13px; font-weight: 500; color: var(--ink-3); display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.metric { display: flex; align-items: center; gap: 18px; }
+.dial { width: 96px; height: 96px; flex: none; }
+.big { font-size: 30px; font-weight: 300; line-height: 1.1; }
+.big small { font-size: 15px; color: var(--ink-2); margin-inline-start: 4px; font-weight: 400; }
+.lbl { color: var(--ink-2); font-size: 14px; margin-top: 4px; }
+.lbl2 { color: var(--ink-3); font-size: 13px; margin-top: 2px; }
+.arrow { transition: transform 1s var(--ease); transform-origin: 50px 50px; }
+.ring { transition: stroke-dashoffset 1s var(--ease); }
+@container (max-width: 640px) {
+  .pair { gap: 12px; }
+  .pair .card { padding: 16px; }
+  .metric { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .dial { width: 72px; height: 72px; }
+  .big { font-size: 26px; }
+}
+
+/* hourly */
+.hours { overflow-x: auto; margin-inline: -20px; padding-inline: 20px; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.25) transparent; }
+.track { display: grid; grid-template-columns: repeat(24, 60px); grid-template-rows: auto auto 84px auto; width: 1440px; }
+.track .tm { grid-row: 1; text-align: center; font-size: 13px; color: var(--ink-2); }
+.track .tm.now { color: var(--sun); font-weight: 500; }
+.track .ic { grid-row: 2; display: grid; place-items: center; padding-block: 8px 0; }
+.track .pp { grid-row: 4; text-align: center; font-size: 12px; color: var(--rain); min-height: 18px; }
+.track .ev { display: block; font-size: 11px; color: var(--sun); }
+.track > svg.curve { grid-row: 3; grid-column: 1 / -1; width: 1440px; height: 84px; overflow: visible; }
+.track text { fill: var(--ink); font-size: 14px; font-family: var(--font-ui); }
+
+/* daily */
+.days { display: flex; flex-direction: column; }
+.day {
+  display: grid; grid-template-columns: 4.8em 64px 2.6em minmax(0, 1fr) 2.6em; align-items: center; gap: 12px;
+  padding-block: 12px; border-top: 1px solid var(--line-2);
+}
+.day:first-child { border-top: 0; padding-top: 2px; }
+.day .dn { font-weight: 500; white-space: nowrap; }
+.day .di { display: flex; flex-direction: column; align-items: center; gap: 0; }
+.day .di small { color: var(--rain); font-size: 11px; line-height: 1.2; }
+.day .lo { color: var(--ink-3); text-align: end; }
+.day .hi { text-align: start; }
+.bar { position: relative; height: 6px; border-radius: 3px; background: rgba(255,255,255,.12); }
+.bar .fill { position: absolute; top: 0; bottom: 0; border-radius: 3px; }
+.bar .now { position: absolute; top: 50%; width: 10px; height: 10px; border-radius: 50%; background: #fff; border: 2px solid rgba(12,18,34,.6); translate: 0 -50%; margin-inline-start: -5px; }
+@container (max-width: 400px) {
+  .day { grid-template-columns: 4.2em 44px 2.3em minmax(0, 1fr) 2.3em; gap: 8px; }
+}
+
+/* skeleton */
+.is-loading [data-sk] {
+  color: transparent !important; text-shadow: none !important; border-radius: 10px;
+  background: linear-gradient(90deg, rgba(255,255,255,.07) 25%, rgba(255,255,255,.18) 37%, rgba(255,255,255,.07) 63%);
+  background-size: 400% 100%; animation: sk 1.3s ease infinite;
+}
+.is-loading [data-sk] * { visibility: hidden; }
+@keyframes sk { from { background-position: 100% 50%; } to { background-position: 0 50%; } }
+
+/* ---------- review panel (prototype tool, not part of the product) ---------- */
+.review {
+  position: fixed; z-index: 50;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  inset-inline-end: max(16px, env(safe-area-inset-left, 0px));
+  width: min(540px, calc(100vw - 32px));
+  border-radius: 20px; background: rgba(8, 12, 22, .78);
+  -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px);
+  border: 1px solid var(--line); box-shadow: 0 20px 60px rgba(0,0,0,.4);
+}
+.review:not([open]) { width: auto; }
+.review summary {
+  list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px; font-weight: 500; font-size: 14px; min-height: 24px;
+}
+.review summary::-webkit-details-marker { display: none; }
+.review summary small { color: var(--ink-3); font-weight: 400; }
+.rv-body { padding: 0 16px 14px; display: flex; flex-direction: column; gap: 12px; max-height: 60vh; overflow-y: auto; }
+.rv-row { display: flex; flex-direction: column; gap: 6px; }
+.rv-row > span { font-size: 12px; color: var(--ink-3); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips button {
+  border: 1px solid var(--line); background: rgba(255,255,255,.05); border-radius: 999px;
+  height: 34px; padding-inline: 12px; font-size: 13px; color: var(--ink-2); display: inline-flex; align-items: center; gap: 6px;
+}
+.chips button:hover { background: rgba(255,255,255,.12); }
+.chips button[aria-pressed="true"] { background: var(--ink); color: #0E1626; border-color: transparent; }
+.rv-foot { display: flex; gap: 12px; justify-content: space-between; font-size: 12px; color: var(--ink-3); flex-wrap: wrap; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+</style>
+
+<canvas id="sky" aria-hidden="true"></canvas>
+
+<div class="stage">
+  <div class="app" id="app">
+    <header class="top">
+      <div class="brand">
+        <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+          <defs><linearGradient id="bm" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFE2A8"/><stop offset="1" stop-color="#FFB45E"/></linearGradient></defs>
+          <circle cx="20" cy="12" r="7" fill="url(#bm)"/>
+          <path d="M9 26h14.5a5.5 5.5 0 0 0 0-11 7.5 7.5 0 0 0-14.3 2.1A4.5 4.5 0 0 0 9 26Z" fill="#F5F8FD" fill-opacity=".92"/>
+        </svg>
+        <span id="brandName">سحاب</span>
+      </div>
+
+      <div class="search" id="searchBox">
+        <input class="glass" id="q" type="text" autocomplete="off" spellcheck="false"
+               role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="sugg">
+        <span id="searchIco"></span>
+        <div class="suggest glass" id="sugg" role="listbox" hidden></div>
+      </div>
+
+      <div class="actions">
+        <button class="icon-btn glass" id="locBtn"></button>
+        <button class="icon-btn glass" id="soundBtn"></button>
+        <button class="icon-btn glass lang-btn" id="langBtn"></button>
+        <div class="seg glass" role="group" id="unitSeg">
+          <button id="uC" aria-pressed="true">°C</button>
+          <button id="uF" aria-pressed="false">°F</button>
+        </div>
+      </div>
+    </header>
+
+    <div id="notices" style="display:flex;flex-direction:column;gap:12px"></div>
+
+    <main class="main">
+      <div class="col-a">
+        <section class="hero" id="hero" aria-live="polite"></section>
+        <div class="pair">
+          <section class="card glass" id="windCard"></section>
+          <section class="card glass" id="humCard"></section>
+        </div>
+        <section class="card glass" id="hourCard"></section>
+      </div>
+      <div class="col-b">
+        <section class="card glass" id="dayCard"></section>
+      </div>
+    </main>
+  </div>
+</div>
+
+<details class="review" id="review">
+  <summary id="rvSum"></summary>
+  <div class="rv-body">
+    <div class="rv-row"><span>المشهد (يتجاوز طقس المدينة للمعاينة)</span><div class="chips" id="rvScene"></div></div>
+    <div class="rv-row"><span>وقت اليوم</span><div class="chips" id="rvTime"></div></div>
+    <div class="rv-row"><span>حالة الواجهة</span><div class="chips" id="rvState"></div></div>
+    <div class="rv-row"><span>العرض</span><div class="chips" id="rvView"></div></div>
+    <div class="rv-foot"><span id="fps">— fps</span><span id="pfLog">مرّر الماوس على اقتراح مدينة لترى الـ prefetch</span></div>
+  </div>
+</details>
+
+<script>
+(() => {
+'use strict';
+
+/* ================= helpers ================= */
+const $ = (s, r = document) => r.querySelector(s);
+const lerp = (a, b, t) => a + (b - a) * t;
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const smooth = (e0, e1, x) => { const t = clamp((x - e0) / (e1 - e0)); return t * t * (3 - 2 * t); };
+const hx = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+const mixC = (a, b, t) => [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)];
+const rgba = (c, a = 1) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a})`;
+const LRI = '⁦', PDI = '⁩';
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('sahab.' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem('sahab.' + k, JSON.stringify(v)); } catch {} }
+};
+
+/* ================= icons (Lucide-style) ================= */
+const CT = 'M4 14.9A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.24';
+const IC = {
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>',
+  moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+  cloud: '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>',
+  cloudSun: '<path d="M12 2v2M4.93 4.93l1.41 1.41M20 12h2M19.07 4.93l-1.41 1.41M15.95 12.65a4 4 0 0 0-5.93-4.13"/><path d="M13 22H7a5 5 0 1 1 4.9-6H13a3 3 0 0 1 0 6Z"/>',
+  cloudMoon: '<path d="M10.19 8.5A6 6 0 0 1 16 4a1 1 0 0 0 6 6 6 6 0 0 1-3 5.2"/><path d="M13 16a3 3 0 1 1 0 6H7a5 5 0 1 1 4.9-6Z"/>',
+  fog: `<path d="${CT}"/><path d="M16 17H7M17 21H9"/>`,
+  drizzle: `<path d="${CT}"/><path d="M8 19v1M8 14v1M16 19v1M16 14v1M12 21v1M12 16v1"/>`,
+  rain: `<path d="${CT}"/><path d="M16 14v6M8 14v6M12 16v6"/>`,
+  snow: `<path d="${CT}"/><path d="M8 15h.01M8 19h.01M12 17h.01M12 21h.01M16 15h.01M16 19h.01"/>`,
+  storm: '<path d="M6 16.33A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 .5 8.97"/><path d="m13 12-3 5h4l-3 5"/>',
+  wind: '<path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2M9.6 4.6A2 2 0 1 1 11 8H2M12.6 19.4A2 2 0 1 0 14 16H2"/>',
+  drop: '<path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/>',
+  search: '<circle cx="11" cy="11" r="7.5"/><path d="m21 21-4.3-4.3"/>',
+  locate: '<path d="M3 11l19-9-9 19-2-8-8-2z"/>',
+  star: '<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>',
+  vol: '<path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14"/>',
+  volX: '<path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M22 9l-6 6M16 9l6 6"/>',
+  loader: '<path d="M21 12a9 9 0 1 1-6.22-8.56"/>',
+  calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  alert: '<circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>',
+  refresh: '<path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5"/>',
+  sliders: '<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>',
+  pin: '<path d="M20 10c0 5-5.5 10.2-7.4 11.8a1 1 0 0 1-1.2 0C9.5 20.2 4 15 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/>',
+  close: '<path d="M18 6 6 18M6 6l12 12"/>',
+  history: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l4 2"/>'
+};
+const icon = (n, s = 24, extra = '') =>
+  `<svg class="i" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra}>${IC[n]}</svg>`;
+const condIcon = (c, day) => ({
+  clear: day ? 'sun' : 'moon', partly: day ? 'cloudSun' : 'cloudMoon', overcast: 'cloud',
+  fog: 'fog', drizzle: 'drizzle', rain: 'rain', snow: 'snow', storm: 'storm'
+})[c];
+
+/* ================= i18n ================= */
+const T = {
+  ar: {
+    brand: 'سحاب', searchPh: 'ابحث عن مدينة…', searchLbl: 'ابحث عن مدينة',
+    myLoc: 'موقعي', yourLoc: 'موقعك الحالي', recent: 'عمليات بحث سابقة', results: 'مدن',
+    noRes: q => `ما لقينا مدينة باسم «${q}». جرّب اسم ثاني أو اكتبه بالإنجليزي.`,
+    makeHome: 'اجعلها مدينتي', isHome: 'مدينتي',
+    localTime: 'الساعة هناك', demo: 'بيانات تجريبية',
+    feels: 'الإحساس', hi: 'العليا', lo: 'الدنيا',
+    wind: 'الرياح', gusts: 'هبّات حتى', from: 'رياح',
+    humidity: 'الرطوبة', dew: 'نقطة الندى', comfort: ['جافة', 'مريحة', 'رطبة', 'رطبة جداً'],
+    hourly: 'الـ 24 ساعة القادمة', now: 'الآن', daily: 'الأيام السبعة القادمة',
+    today: 'اليوم', tomorrow: 'غداً', sunrise: 'شروق', sunset: 'غروب',
+    onbTitle: 'بدك تشوف طقس مكانك؟',
+    onbBody: 'منستخدم موقعك بس عشان نجيب الطقس، وما منحفظه عندنا.',
+    useLoc: 'استخدم موقعي', pickCity: 'اختار مدينتي', later: 'لاحقاً',
+    locating: 'جاري تحديد موقعك…', locatingBody: 'المتصفح ممكن يسألك عن الإذن.',
+    deniedTitle: 'ما قدرنا نوصل لموقعك',
+    denied: 'الإذن مرفوض. ابحث عن مدينتك واضغط «اجعلها مدينتي»، وبتفتح عليها كل مرة.',
+    errTitle: 'ما قدرنا نجيب الطقس هلأ',
+    err: 'تأكد من الاتصال بالإنترنت وجرّب كمان مرة. منعرض آخر بيانات وصلتنا.',
+    retry: 'أعد المحاولة', dismiss: 'إغلاق',
+    soundOn: 'كتم الأصوات المحيطة', soundOff: 'تشغيل الأصوات المحيطة', soundPending: 'الأصوات تشتغل مع أول نقرة على الصفحة',
+    langBtn: 'EN', langLbl: 'Switch to English',
+    kmh: 'كم/س', mph: 'ميل/س',
+    dirs: ['شمالية', 'شمالية شرقية', 'شرقية', 'جنوبية شرقية', 'جنوبية', 'جنوبية غربية', 'غربية', 'شمالية غربية'],
+    compass: ['ش', 'ق', 'ج', 'غ'],
+    cond: { clear: 'صافٍ', partly: 'غائم جزئياً', overcast: 'غائم', fog: 'ضباب', drizzle: 'رذاذ', rain: 'ماطر', snow: 'ثلج', storm: 'عاصفة رعدية' },
+    locale: 'ar-u-nu-latn'
+  },
+  en: {
+    brand: 'Sahab', searchPh: 'Search for a city…', searchLbl: 'Search for a city',
+    myLoc: 'My location', yourLoc: 'Your location', recent: 'Recent searches', results: 'Cities',
+    noRes: q => `No city called “${q}”. Try another spelling or the Arabic name.`,
+    makeHome: 'Set as my city', isHome: 'My city',
+    localTime: 'Local time', demo: 'Demo data',
+    feels: 'Feels like', hi: 'H', lo: 'L',
+    wind: 'Wind', gusts: 'Gusts up to', from: 'From the',
+    humidity: 'Humidity', dew: 'Dew point', comfort: ['Dry', 'Comfortable', 'Humid', 'Very humid'],
+    hourly: 'Next 24 hours', now: 'Now', daily: 'Next 7 days',
+    today: 'Today', tomorrow: 'Tomorrow', sunrise: 'Sunrise', sunset: 'Sunset',
+    onbTitle: 'Want the weather where you are?',
+    onbBody: 'We only use your location to fetch the weather, and we never store it.',
+    useLoc: 'Use my location', pickCity: 'Choose my city', later: 'Later',
+    locating: 'Finding your location…', locatingBody: 'Your browser may ask for permission.',
+    deniedTitle: "We couldn't get your location",
+    denied: 'Location access is off. Search for your city and tap “Set as my city” to open on it every time.',
+    errTitle: "We couldn't load the weather",
+    err: 'Check your internet connection and try again. You’re seeing the last data we received.',
+    retry: 'Try again', dismiss: 'Dismiss',
+    soundOn: 'Mute ambient sound', soundOff: 'Turn ambient sound on', soundPending: 'Ambient sound starts on your first tap',
+    langBtn: 'ع', langLbl: 'التبديل للعربية',
+    kmh: 'km/h', mph: 'mph',
+    dirs: ['north', 'northeast', 'east', 'southeast', 'south', 'southwest', 'west', 'northwest'],
+    compass: ['N', 'E', 'S', 'W'],
+    cond: { clear: 'Clear', partly: 'Partly cloudy', overcast: 'Overcast', fog: 'Fog', drizzle: 'Drizzle', rain: 'Rain', snow: 'Snow', storm: 'Thunderstorm' },
+    locale: 'en-GB'
+  }
+};
+
+/* ================= demo fixtures (shape mirrors docs/API_CONTRACT.md) ================= */
+const mk = (id, cc, ar, en, clock, cond, temp, feels, wind, gust, dir, hum, sunrise, sunset, days) => ({
+  id, cc, ar: { name: ar[0], country: ar[1] }, en: { name: en[0], country: en[1] },
+  clock, cond, temp, feels, wind, gust, dir, hum, sunrise, sunset,
+  days: days.map(([cond, hi, lo, p]) => ({ cond, hi, lo, p }))
+});
+const CITIES = [
+  mk('amman', 'JO', ['عمّان', 'الأردن'], ['Amman', 'Jordan'], '14:32', 'partly', 24, 25, 14, 22, 290, 41, '06:12', '17:18',
+    [['partly', 27, 16, 5], ['clear', 28, 17, 0], ['clear', 29, 17, 0], ['partly', 26, 15, 10], ['rain', 21, 13, 60], ['overcast', 22, 13, 20], ['clear', 25, 14, 0]]),
+  mk('dubai', 'AE', ['دبي', 'الإمارات'], ['Dubai', 'UAE'], '12:10', 'clear', 39, 42, 12, 18, 320, 48, '06:22', '17:50',
+    [['clear', 41, 30, 0], ['clear', 40, 29, 0], ['clear', 39, 29, 0], ['partly', 38, 28, 0], ['clear', 39, 28, 0], ['clear', 40, 29, 0], ['clear', 41, 30, 0]]),
+  mk('london', 'GB', ['لندن', 'المملكة المتحدة'], ['London', 'United Kingdom'], '16:05', 'rain', 11, 8, 28, 46, 225, 88, '06:58', '16:40',
+    [['rain', 13, 8, 90], ['drizzle', 12, 7, 60], ['overcast', 13, 8, 30], ['partly', 14, 7, 10], ['rain', 12, 9, 80], ['rain', 11, 7, 70], ['partly', 12, 6, 20]]),
+  mk('moscow', 'RU', ['موسكو', 'روسيا'], ['Moscow', 'Russia'], '11:20', 'snow', -4, -10, 18, 30, 340, 85, '07:44', '16:38',
+    [['snow', -2, -7, 80], ['snow', -3, -9, 70], ['overcast', -5, -11, 20], ['clear', -6, -14, 0], ['partly', -4, -10, 10], ['snow', -1, -6, 60], ['overcast', -2, -7, 30]]),
+  mk('tokyo', 'JP', ['طوكيو', 'اليابان'], ['Tokyo', 'Japan'], '22:40', 'clear', 14, 13, 6, 10, 20, 60, '05:56', '16:47',
+    [['clear', 19, 12, 0], ['partly', 20, 13, 10], ['rain', 17, 13, 70], ['overcast', 18, 12, 30], ['clear', 20, 11, 0], ['clear', 21, 12, 0], ['partly', 19, 12, 10]]),
+  mk('miami', 'US', ['ميامي', 'الولايات المتحدة'], ['Miami', 'United States'], '15:30', 'storm', 27, 31, 42, 70, 135, 90, '07:28', '18:46',
+    [['storm', 30, 24, 90], ['rain', 29, 24, 70], ['partly', 30, 24, 20], ['storm', 29, 23, 80], ['partly', 30, 24, 20], ['clear', 31, 24, 0], ['partly', 30, 25, 10]]),
+  mk('sf', 'US', ['سان فرانسيسكو', 'الولايات المتحدة'], ['San Francisco', 'United States'], '08:10', 'fog', 13, 12, 10, 16, 260, 95, '07:24', '18:12',
+    [['fog', 18, 12, 10], ['partly', 19, 12, 0], ['clear', 21, 13, 0], ['fog', 17, 12, 10], ['overcast', 17, 12, 20], ['partly', 19, 12, 0], ['clear', 22, 13, 0]]),
+  mk('berlin', 'DE', ['برلين', 'ألمانيا'], ['Berlin', 'Germany'], '13:00', 'overcast', 9, 7, 16, 28, 250, 76, '07:02', '16:42',
+    [['overcast', 10, 5, 20], ['rain', 9, 5, 70], ['drizzle', 8, 4, 50], ['overcast', 9, 3, 20], ['partly', 10, 3, 10], ['clear', 11, 2, 0], ['partly', 10, 4, 10]]),
+  mk('dublin', 'IE', ['دبلن', 'أيرلندا'], ['Dublin', 'Ireland'], '10:15', 'drizzle', 12, 10, 22, 35, 240, 92, '07:22', '17:00',
+    [['drizzle', 13, 9, 70], ['rain', 12, 8, 80], ['partly', 13, 7, 20], ['overcast', 12, 8, 30], ['drizzle', 12, 9, 60], ['partly', 13, 8, 10], ['rain', 11, 7, 70]])
+];
+const GEO_ID = 'amman';
+const BASE_DATE = new Date(Date.UTC(2026, 9, 26));
+
+/* ================= state ================= */
+const state = {
+  cityId: store.get('home', null) || 'amman',
+  home: store.get('home', null),
+  units: store.get('units', 'metric'),
+  lang: store.get('lang', 'ar'),
+  sound: store.get('sound', true),
+  recents: store.get('recents', []),
+  onboarding: !store.get('onboarded', false),
+  fromGeo: false, locating: false, notice: null,
+  sceneOverride: null, timeOverride: null, ui: 'normal'
+};
+const prefetched = new Set();
+const city = () => CITIES.find(c => c.id === state.cityId);
+const L = () => T[state.lang];
+const cvt = c => state.units === 'metric' ? c : c * 9 / 5 + 32;
+const tNum = c => Math.round(cvt(c));
+const tH = c => `<span class="n">${tNum(c)}°</span>`;
+const tS = c => `${LRI}${tNum(c)}°${PDI}`;
+const wNum = k => Math.round(state.units === 'metric' ? k : k * 0.621371);
+const wUnit = () => state.units === 'metric' ? L().kmh : L().mph;
+const mins = s => { const [h, m] = s.split(':').map(Number); return h * 60 + m; };
+const isDayAt = (c, m) => { m = ((m % 1440) + 1440) % 1440; return m >= mins(c.sunrise) && m < mins(c.sunset); };
+const norm = s => s.toLowerCase().normalize('NFKD').replace(/[ً-ٰٟ]/g, '')
+  .replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/[̀-ͯ]/g, '').trim();
+
+function sunElevation(c) {
+  const m = mins(c.clock), sr = mins(c.sunrise), ss = mins(c.sunset);
+  if (m >= sr && m < ss) return Math.sin(Math.PI * (m - sr) / (ss - sr)) * 0.9;
+  const nightLen = 1440 - (ss - sr);
+  const into = ((m - ss) + 1440) % 1440;
+  return -0.06 - 0.5 * Math.sin(Math.PI * into / nightLen);
+}
+const TIME_ELEV = { day: 0.72, golden: 0.03, night: -0.55 };
+
+/* ================= scene model ================= */
+const PAL = {
+  clear:    { d: ['#2F7FD6', '#A8D6F2'], n: ['#040A1A', '#1A2A4C'], cov: .04, dark: 0 },
+  partly:   { d: ['#3A82C8', '#B4D5EC'], n: ['#060C1C', '#1E2B45'], cov: .42, dark: .06 },
+  overcast: { d: ['#6B7A8B', '#AEB8C3'], n: ['#0D121B', '#2A313D'], cov: .96, dark: .38 },
+  fog:      { d: ['#97A3AE', '#CBD2D8'], n: ['#171C23', '#39414A'], cov: .5, dark: .15, fog: .9 },
+  drizzle:  { d: ['#5B6C80', '#9AA7B5'], n: ['#0A0F17', '#232B37'], cov: .88, dark: .4, rain: .28 },
+  rain:     { d: ['#3C4A5C', '#788695'], n: ['#070B13', '#1C2430'], cov: .97, dark: .62, rain: .78 },
+  snow:     { d: ['#8CA3BE', '#DCE5EF'], n: ['#0F1727', '#38475E'], cov: .86, dark: .18, snow: .85 },
+  storm:    { d: ['#1D2431', '#465264'], n: ['#04060B', '#141A24'], cov: 1, dark: .88, rain: 1, light: 1 }
+};
+function makeTarget(cond, elev, temp, wind) {
+  const p = PAL[cond];
+  const day = smooth(-0.14, 0.22, elev);
+  const golden = clamp(1 - Math.abs(elev - 0.03) / 0.2) * (1 - p.cov * 0.75);
+  let top = mixC(hx(p.n[0]), hx(p.d[0]), day);
+  let hor = mixC(hx(p.n[1]), hx(p.d[1]), day);
+  top = mixC(top, [70, 66, 128], golden * 0.45);
+  hor = mixC(hor, [255, 146, 98], golden * 0.8);
+  const heat = clamp((temp - 33) / 8), cold = clamp(-temp / 12);
+  hor = mixC(hor, [240, 212, 166], heat * 0.55 * day);
+  return {
+    top, hor, day, golden,
+    sun: day * (1 - p.cov * 0.88), moon: (1 - day) * (1 - p.cov * 0.85), stars: (1 - day) * (1 - p.cov * 0.95),
+    cov: p.cov, dark: p.dark, rain: p.rain || 0, snow: p.snow || 0, fog: p.fog || 0, light: p.light || 0,
+    heat, cold, wind: clamp(wind / 70), elev
+  };
+}
+const SCALARS = ['day', 'golden', 'sun', 'moon', 'stars', 'cov', 'dark', 'rain', 'snow', 'fog', 'light', 'heat', 'cold', 'wind', 'elev'];
+let target, cur;
+
+function sceneInputs() {
+  const c = city();
+  const cond = state.sceneOverride || c.cond;
+  const elev = state.timeOverride ? TIME_ELEV[state.timeOverride] : sunElevation(c);
+  return makeTarget(cond, elev, c.temp, c.wind);
+}
+function updateScene(immediate) {
+  target = sceneInputs();
+  if (immediate || !cur) cur = JSON.parse(JSON.stringify(target));
+  const lum = (v => (0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2]) / 255)(mixC(target.top, target.hor, 0.55));
+  document.documentElement.style.setProperty('--glass-a', (0.2 + lum * 0.3).toFixed(3));
+  document.documentElement.style.setProperty('--scrim', (Math.max(0, lum - 0.3) * 0.75).toFixed(3));
+}
+
+/* ================= canvas renderer ================= */
+const cv = $('#sky'), ctx = cv.getContext('2d');
+let W = 0, H = 0, DPR = 1, hY = 0;
+const isRTL = () => document.documentElement.dir === 'rtl';
+const Q = reduceMotion ? 0.4 : 1;
+let RAIN_N = 1600, SNOW_N = 700;
+let drops, flakes, ripples = [], stars = [], clouds = [], mtnFar = [], mtnNear = [], sprites = [];
+
+function makeSprite(seed) {
+  const w = 512, h = 220, c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const g = c.getContext('2d');
+  let s = seed;
+  const rnd = () => (s = (s * 9301 + 49297) % 233280) / 233280;
+  for (let i = 0; i < 26; i++) {
+    const x = w * (0.16 + rnd() * 0.68);
+    const y = h * (0.42 + rnd() * 0.26) - Math.sin((x / w) * Math.PI) * h * 0.18;
+    const r = h * (0.16 + rnd() * 0.2) * (0.6 + Math.sin((x / w) * Math.PI) * 0.6);
+    const gr = g.createRadialGradient(x, y, 0, x, y, r);
+    gr.addColorStop(0, 'rgba(255,255,255,.55)');
+    gr.addColorStop(0.55, 'rgba(255,255,255,.28)');
+    gr.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = gr;
+    g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+  }
+  const d = document.createElement('canvas');
+  d.width = w; d.height = h;
+  const dg = d.getContext('2d');
+  dg.drawImage(c, 0, 0);
+  dg.globalCompositeOperation = 'source-in';
+  dg.fillStyle = '#2A303A';
+  dg.fillRect(0, 0, w, h);
+  return { lit: c, dark: d };
+}
+
+function initScene() {
+  sprites = [makeSprite(7), makeSprite(19), makeSprite(43)];
+  stars = Array.from({ length: 240 }, () => ({ x: Math.random(), y: Math.random() * 0.7, r: Math.random() * 1.2 + 0.3, ph: Math.random() * 6.28, sp: 0.6 + Math.random() * 1.6 }));
+  clouds = Array.from({ length: 18 }, (_, i) => ({
+    x: Math.random() * 1.6 - 0.3, y: 0.04 + Math.random() * 0.5, s: 0.55 + Math.random() * 0.95,
+    sp: sprites[i % 3], th: (i / 18) * 0.92, v: 0.6 + Math.random() * 0.8
+  }));
+  const ridge = (n, f) => Array.from({ length: n + 1 }, (_, i) => {
+    const x = i / n;
+    return f.reduce((a, [amp, fr, ph]) => a + amp * Math.sin(x * fr + ph), 0);
+  });
+  mtnFar = ridge(96, [[0.5, 5.1, 0.4], [0.3, 11.7, 1.3], [0.15, 27.0, 2.2], [0.06, 61, 0.7]]);
+  mtnNear = ridge(96, [[0.45, 3.3, 2.1], [0.25, 9.4, 0.2], [0.1, 23.0, 1.7]]);
+  resize();
+}
+
+function resize() {
+  DPR = Math.min(window.devicePixelRatio || 1, 1.5);
+  W = cv.width = Math.round(innerWidth * DPR);
+  H = cv.height = Math.round(innerHeight * DPR);
+  hY = H * 0.72;
+  const small = innerWidth < 700;
+  RAIN_N = Math.round((small ? 700 : 1600) * Q);
+  SNOW_N = Math.round((small ? 380 : 700) * Q);
+  drops = new Float32Array(RAIN_N * 4);
+  for (let i = 0; i < RAIN_N; i++) spawnDrop(i, true);
+  flakes = new Float32Array(SNOW_N * 4);
+  for (let i = 0; i < SNOW_N; i++) spawnFlake(i, true);
+}
+function spawnDrop(i, anywhere) {
+  const o = i * 4;
+  drops[o] = Math.random() * W * 1.3 - W * 0.15;
+  drops[o + 2] = Math.random();
+  drops[o + 1] = anywhere ? Math.random() * H : -Math.random() * H * 0.3;
+  drops[o + 3] = 0.85 + Math.random() * 0.3;
+}
+function spawnFlake(i, anywhere) {
+  const o = i * 4;
+  flakes[o] = Math.random() * W * 1.2 - W * 0.1;
+  flakes[o + 1] = anywhere ? Math.random() * H : -Math.random() * H * 0.2;
+  flakes[o + 2] = Math.random();
+  flakes[o + 3] = Math.random() * 6.28;
+}
+
+let flash = 0, bolt = null, boltLife = 0, nextStrike = 2;
+function makeBolt() {
+  const pts = [];
+  let x = W * (0.12 + Math.random() * 0.76), y = 0;
+  const endY = hY * (0.8 + Math.random() * 0.18);
+  pts.push([x, y]);
+  while (y < endY) { y = Math.min(endY, y + H * (0.025 + Math.random() * 0.04)); x += (Math.random() - 0.5) * W * 0.05; pts.push([x, y]); }
+  const k = 2 + Math.floor(Math.random() * (pts.length - 3));
+  const br = [pts[k]];
+  let bx = pts[k][0], by = pts[k][1];
+  for (let j = 0; j < 5; j++) { by += H * 0.03; bx += (Math.random() * 0.6 + 0.2) * W * 0.03 * (Math.random() < 0.5 ? -1 : 1); br.push([bx, by]); }
+  return [pts, br];
+}
+
+let t = 0, last = performance.now(), fpsAcc = 0, fpsN = 0, fpsT = 0;
+function damp(a, b, k, dt) { return lerp(a, b, 1 - Math.exp(-k * dt)); }
+
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now; t += dt;
+  fpsAcc += dt; fpsN++;
+  if (now - fpsT > 500) { $('#fps').textContent = `${Math.round(fpsN / fpsAcc)} fps · ${W}×${H}`; fpsAcc = 0; fpsN = 0; fpsT = now; }
+
+  for (const k of SCALARS) cur[k] = damp(cur[k], target[k], 2.2, dt);
+  cur.top = mixC(cur.top, target.top, 1 - Math.exp(-2.2 * dt));
+  cur.hor = mixC(cur.hor, target.hor, 1 - Math.exp(-2.2 * dt));
+  draw(dt);
+  audioTick();
+  requestAnimationFrame(frame);
+}
+
+function draw(dt) {
+  const s = cur, rtl = isRTL();
+  const sunX = rtl ? W * 0.2 : W * 0.8;
+
+  // sky
+  let g = ctx.createLinearGradient(0, 0, 0, hY);
+  g.addColorStop(0, rgba(s.top));
+  g.addColorStop(0.62, rgba(mixC(s.top, s.hor, 0.55)));
+  g.addColorStop(1, rgba(s.hor));
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, hY + 1);
+
+  // stars
+  if (s.stars > 0.01) {
+    ctx.fillStyle = '#fff';
+    for (const st of stars) {
+      const a = s.stars * (0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t * st.sp + st.ph)));
+      ctx.globalAlpha = a * 0.9;
+      const r = st.r * DPR;
+      ctx.fillRect(st.x * W, st.y * hY, r, r);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // sun
+  const sy = hY - clamp(s.elev, -0.25, 1) * hY * 0.85;
+  if (s.sun > 0.01) {
+    const warm = mixC([255, 240, 205], [255, 168, 110], s.golden);
+    g = ctx.createRadialGradient(sunX, sy, 0, sunX, sy, H * 0.55);
+    g.addColorStop(0, rgba(warm, 0.55 * s.sun));
+    g.addColorStop(0.18, rgba(warm, 0.22 * s.sun));
+    g.addColorStop(1, rgba(warm, 0));
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, hY);
+    ctx.fillStyle = rgba(mixC([255, 251, 238], [255, 200, 150], s.golden), Math.min(1, s.sun * 1.4));
+    ctx.beginPath(); ctx.arc(sunX, sy, 26 * DPR, 0, 6.283); ctx.fill();
+  }
+  // moon
+  if (s.moon > 0.01) {
+    const mx = sunX, my = hY * 0.26;
+    g = ctx.createRadialGradient(mx, my, 0, mx, my, H * 0.3);
+    g.addColorStop(0, `rgba(190,210,255,${0.2 * s.moon})`);
+    g.addColorStop(1, 'rgba(190,210,255,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, hY);
+    ctx.fillStyle = `rgba(236,241,255,${s.moon})`;
+    ctx.beginPath(); ctx.arc(mx, my, 17 * DPR, 0, 6.283); ctx.fill();
+    ctx.fillStyle = rgba(mixC(s.top, s.hor, 0.2), s.moon * 0.92);
+    ctx.beginPath(); ctx.arc(mx + 7 * DPR * (rtl ? 1 : -1), my - 4 * DPR, 15 * DPR, 0, 6.283); ctx.fill();
+  }
+
+  // overcast deck
+  const lightness = (1 - s.dark * 0.85) * (0.22 + 0.78 * s.day);
+  if (s.cov > 0.5) {
+    const a = Math.pow((s.cov - 0.5) / 0.5, 1.5) * 0.85;
+    g = ctx.createLinearGradient(0, 0, 0, hY * 0.75);
+    const deck = mixC([38, 44, 54], [205, 212, 222], lightness);
+    g.addColorStop(0, rgba(deck, a));
+    g.addColorStop(1, rgba(deck, 0));
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, hY);
+  }
+
+  // clouds
+  const cloudSpeed = (0.006 + s.wind * 0.05) * (reduceMotion ? 0.4 : 1);
+  for (const c of clouds) {
+    c.x += cloudSpeed * c.v * dt * (rtl ? -1 : 1);
+    if (c.x > 1.35) c.x = -0.45; if (c.x < -0.45) c.x = 1.35;
+    const a = smooth(c.th - 0.06, c.th + 0.08, s.cov);
+    if (a < 0.01) continue;
+    const w = 560 * DPR * c.s * (0.8 + s.cov * 0.5), h = w * 0.43;
+    const x = c.x * W - w / 2, y = c.y * hY * 0.95 - h / 2;
+    ctx.globalAlpha = a * 0.95;
+    ctx.drawImage(c.sp.dark, x, y, w, h);
+    ctx.globalAlpha = a * lightness;
+    ctx.drawImage(c.sp.lit, x, y, w, h);
+    if (s.golden > 0.05) { ctx.globalAlpha = a * s.golden * 0.35; ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(c.sp.lit, x, y + h * 0.08, w, h); ctx.globalCompositeOperation = 'source-over'; }
+  }
+  ctx.globalAlpha = 1;
+
+  // lightning flash lights the sky
+  if (s.light > 0.4) {
+    if (t > nextStrike) {
+      flash = reduceMotion ? 0.35 : 1; bolt = makeBolt(); boltLife = 0.22;
+      nextStrike = t + 2.5 + Math.random() * 5;
+      thunder(0.3 + Math.random() * 1.4);
+    }
+  }
+  if (flash > 0.01) {
+    ctx.fillStyle = `rgba(215,225,255,${flash * 0.32 * s.light})`;
+    ctx.fillRect(0, 0, W, hY);
+  }
+
+  // mountains
+  const ridgeDraw = (arr, base, amp, col) => {
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.moveTo(0, hY + 2);
+    for (let i = 0; i < arr.length; i++) ctx.lineTo((i / (arr.length - 1)) * W, base - (arr[i] * 0.5 + 0.55) * amp);
+    ctx.lineTo(W, hY + 2); ctx.closePath(); ctx.fill();
+  };
+  const snowCap = s.snow * 0.45;
+  ridgeDraw(mtnFar, hY, H * 0.085, rgba(mixC(mixC(mixC(s.hor, s.top, 0.35), [12, 16, 26], 0.25), [222, 230, 240], snowCap)));
+  ridgeDraw(mtnNear, hY, H * 0.045, rgba(mixC(mixC(s.hor, [8, 12, 20], 0.55), [200, 210, 224], snowCap * 0.8)));
+
+  // ground (reflective)
+  g = ctx.createLinearGradient(0, hY, 0, H);
+  g.addColorStop(0, rgba(mixC(s.hor, [6, 10, 18], 0.58)));
+  g.addColorStop(1, rgba(mixC(s.top, [3, 5, 9], 0.8)));
+  ctx.fillStyle = g;
+  ctx.fillRect(0, hY, W, H - hY);
+  const wet = Math.max(s.rain, s.fog * 0.3);
+  g = ctx.createLinearGradient(0, hY, 0, H);
+  g.addColorStop(0, rgba(s.hor, 0.38 + wet * 0.2));
+  g.addColorStop(1, rgba(s.top, 0.12 + wet * 0.15));
+  ctx.fillStyle = g;
+  ctx.fillRect(0, hY, W, H - hY);
+  if (s.snow > 0.01) { ctx.fillStyle = `rgba(226,233,243,${s.snow * 0.5 * (0.35 + 0.65 * s.day)})`; ctx.fillRect(0, hY, W, H - hY); }
+  // sun / moon reflection streak
+  const refl = Math.max(s.sun, s.moon * 0.6);
+  if (refl > 0.02) {
+    ctx.save(); ctx.translate(sunX, hY); ctx.scale(0.18, 1);
+    g = ctx.createRadialGradient(0, 0, 0, 0, 0, H - hY);
+    const rc = s.sun > s.moon ? mixC([255, 232, 190], [255, 160, 100], s.golden) : [200, 215, 255];
+    g.addColorStop(0, rgba(rc, 0.5 * refl * (0.5 + wet)));
+    g.addColorStop(1, rgba(rc, 0));
+    ctx.fillStyle = g; ctx.fillRect(-(H - hY), 0, 2 * (H - hY), H - hY);
+    ctx.restore();
+  }
+  // horizon glow line
+  g = ctx.createLinearGradient(0, hY - 6 * DPR, 0, hY + 6 * DPR);
+  g.addColorStop(0, rgba(s.hor, 0)); g.addColorStop(0.5, rgba(mixC(s.hor, [255, 255, 255], 0.3), 0.35)); g.addColorStop(1, rgba(s.hor, 0));
+  ctx.fillStyle = g; ctx.fillRect(0, hY - 6 * DPR, W, 12 * DPR);
+
+  // fog
+  if (s.fog > 0.01) {
+    const fc = mixC(s.hor, [255, 255, 255], 0.22);
+    ctx.fillStyle = rgba(fc, s.fog * 0.28); ctx.fillRect(0, 0, W, H);
+    g = ctx.createLinearGradient(0, hY - H * 0.3, 0, hY + H * 0.15);
+    g.addColorStop(0, rgba(fc, 0)); g.addColorStop(0.65, rgba(fc, s.fog * 0.75)); g.addColorStop(1, rgba(fc, s.fog * 0.2));
+    ctx.fillStyle = g; ctx.fillRect(0, hY - H * 0.3, W, H * 0.45);
+    for (let i = 0; i < 5; i++) {
+      const c = clouds[i];
+      const w = W * 0.7, h = H * 0.16;
+      const x = ((c.x + i * 0.27) % 1.6 - 0.3) * W - w / 2;
+      ctx.globalAlpha = s.fog * 0.5 * lightness + s.fog * 0.15;
+      ctx.drawImage(c.sp.lit, x, hY - h * (0.6 + (i % 3) * 0.25), w, h);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // rain
+  const slant = (0.08 + s.wind * 0.55) * (rtl ? 1 : -1) * -1;
+  const nR = Math.floor(s.rain * RAIN_N);
+  if (nR > 0) {
+    ctx.strokeStyle = `rgba(205,218,238,${0.22 + 0.22 * s.day})`;
+    ctx.lineWidth = 1 * DPR;
+    ctx.beginPath();
+    for (let i = 0; i < nR; i++) {
+      const o = i * 4, z = drops[o + 2];
+      const sp = (900 + z * 1100) * DPR * drops[o + 3] * (reduceMotion ? 0.5 : 1);
+      drops[o + 1] += sp * dt;
+      drops[o] += sp * dt * slant;
+      const endY = hY + z * (H - hY) * 0.98;
+      if (drops[o + 1] > endY) {
+        if (ripples.length < 160 && Math.random() < 0.6) ripples.push([drops[o], endY, 0, z]);
+        spawnDrop(i, false);
+        continue;
+      }
+      const len = (8 + z * 26) * DPR;
+      ctx.moveTo(drops[o], drops[o + 1]);
+      ctx.lineTo(drops[o] - slant * len, drops[o + 1] - len);
+    }
+    ctx.stroke();
+  }
+  if (ripples.length) {
+    ctx.strokeStyle = 'rgba(220,230,245,.35)';
+    ctx.lineWidth = 0.8 * DPR;
+    ctx.beginPath();
+    for (let i = ripples.length - 1; i >= 0; i--) {
+      const r = ripples[i];
+      r[2] += dt * 2.4;
+      if (r[2] > 1) { ripples.splice(i, 1); continue; }
+      const rad = (2 + r[2] * 10 * (0.5 + r[3])) * DPR;
+      ctx.moveTo(r[0] + rad, r[1]);
+      ctx.ellipse(r[0], r[1], rad, rad * 0.28, 0, 0, 6.283);
+    }
+    ctx.stroke();
+  }
+
+  // snow
+  const nS = Math.floor(s.snow * SNOW_N);
+  if (nS > 0) {
+    ctx.fillStyle = 'rgba(255,255,255,.9)';
+    ctx.beginPath();
+    for (let i = 0; i < nS; i++) {
+      const o = i * 4, z = flakes[o + 2];
+      const sp = (28 + z * 70) * DPR * (reduceMotion ? 0.5 : 1);
+      flakes[o + 1] += sp * dt;
+      flakes[o] += (Math.sin(t * 1.3 + flakes[o + 3]) * 18 * z + slant * 60 * s.wind) * DPR * dt;
+      if (flakes[o + 1] > hY + z * (H - hY)) { spawnFlake(i, false); continue; }
+      const r = (0.9 + z * 2.6) * DPR;
+      ctx.moveTo(flakes[o] + r, flakes[o + 1]);
+      ctx.arc(flakes[o], flakes[o + 1], r, 0, 6.283);
+    }
+    ctx.fill();
+  }
+
+  // lightning bolt + global flash
+  if (boltLife > 0 && bolt) {
+    boltLife -= dt;
+    const a = clamp(boltLife / 0.22);
+    for (const [w, al] of [[9, 0.12], [2.2, 0.95]]) {
+      ctx.strokeStyle = `rgba(235,240,255,${al * a})`;
+      ctx.lineWidth = w * DPR;
+      ctx.beginPath();
+      for (const path of bolt) path.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y));
+      ctx.stroke();
+    }
+  }
+  if (flash > 0.01) {
+    ctx.fillStyle = `rgba(220,228,255,${flash * 0.12})`;
+    ctx.fillRect(0, 0, W, H);
+    flash *= Math.exp(-dt * 7);
+    if (flash < 0.3 && flash > 0.25 && Math.random() < 0.4) flash = 0.7;
+  }
+
+  // color grade
+  if (s.heat > 0.01) { ctx.fillStyle = `rgba(255,150,70,${s.heat * 0.1})`; ctx.fillRect(0, 0, W, H); }
+  if (s.cold > 0.01) { ctx.fillStyle = `rgba(110,160,255,${s.cold * 0.08})`; ctx.fillRect(0, 0, W, H); }
+
+  // vignette
+  g = ctx.createRadialGradient(W / 2, H * 0.45, Math.min(W, H) * 0.35, W / 2, H * 0.45, Math.max(W, H) * 0.8);
+  g.addColorStop(0, 'rgba(0,0,0,0)');
+  g.addColorStop(1, 'rgba(0,0,0,.38)');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+}
+
+/* ================= ambient sound (synthesized for the prototype) ================= */
+let AC = null, master, rainG, windG, windF, unlockedAt = -1e9;
+function noiseBuffer(brown) {
+  const len = AC.sampleRate * 2, b = AC.createBuffer(1, len, AC.sampleRate), d = b.getChannelData(0);
+  let lastV = 0;
+  for (let i = 0; i < len; i++) {
+    const r = Math.random() * 2 - 1;
+    if (brown) { lastV = (lastV + 0.02 * r) / 1.02; d[i] = lastV * 3.5; } else d[i] = r;
+  }
+  return b;
+}
+function initAudio() {
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  if (!Ctx) return;
+  AC = new Ctx();
+  master = AC.createGain(); master.gain.value = 0; master.connect(AC.destination);
+  const white = noiseBuffer(false), brown = noiseBuffer(true);
+  const rs = AC.createBufferSource(); rs.buffer = white; rs.loop = true;
+  const hp = AC.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 900;
+  const lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 6500;
+  rainG = AC.createGain(); rainG.gain.value = 0;
+  rs.connect(hp).connect(lp).connect(rainG).connect(master); rs.start();
+  const ws = AC.createBufferSource(); ws.buffer = brown; ws.loop = true;
+  windF = AC.createBiquadFilter(); windF.type = 'lowpass'; windF.frequency.value = 420; windF.Q.value = 2;
+  const lfo = AC.createOscillator(); lfo.frequency.value = 0.13;
+  const lfoG = AC.createGain(); lfoG.gain.value = 220;
+  lfo.connect(lfoG).connect(windF.frequency); lfo.start();
+  windG = AC.createGain(); windG.gain.value = 0;
+  ws.connect(windF).connect(windG).connect(master); ws.start();
+}
+function applyMaster() {
+  if (!AC) return;
+  master.gain.setTargetAtTime(state.sound && !document.hidden ? 0.42 : 0, AC.currentTime, 0.4);
+}
+let audioT = 0;
+function audioTick() {
+  if (!AC || performance.now() - audioT < 120) return;
+  audioT = performance.now();
+  const now = AC.currentTime;
+  rainG.gain.setTargetAtTime(cur.rain * 0.5, now, 0.35);
+  windG.gain.setTargetAtTime(0.05 + cur.wind * 0.55 + cur.light * 0.15 + cur.snow * 0.08, now, 0.5);
+}
+function thunder(delay) {
+  if (!AC || !state.sound) return;
+  const t0 = AC.currentTime + delay;
+  const src = AC.createBufferSource(); src.buffer = noiseBuffer(true);
+  const f = AC.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 170;
+  const g = AC.createGain(); g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(1.1, t0 + 0.09);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + 2.8);
+  src.connect(f).connect(g).connect(master); src.start(t0); src.stop(t0 + 3);
+}
+function unlock() {
+  if (!state.sound) return;
+  if (!AC) { initAudio(); unlockedAt = performance.now(); }
+  if (AC && AC.state === 'suspended') AC.resume();
+  applyMaster(); renderActions();
+}
+addEventListener('pointerdown', unlock, true);
+addEventListener('keydown', unlock, true);
+document.addEventListener('visibilitychange', applyMaster);
+
+/* ================= UI rendering ================= */
+const app = $('#app');
+let shownTemp = null;
+
+function renderStatic() {
+  const t = L();
+  document.documentElement.lang = state.lang;
+  document.documentElement.dir = state.lang === 'ar' ? 'rtl' : 'ltr';
+  $('#brandName').textContent = t.brand;
+  $('#q').placeholder = t.searchPh;
+  $('#q').setAttribute('aria-label', t.searchLbl);
+  $('#searchIco').innerHTML = icon('search', 20);
+  $('#uC').setAttribute('aria-pressed', state.units === 'metric');
+  $('#uF').setAttribute('aria-pressed', state.units !== 'metric');
+  renderActions();
+}
+function renderActions() {
+  const t = L();
+  const lb = $('#locBtn');
+  lb.innerHTML = icon(state.locating ? 'loader' : 'locate', 20);
+  lb.classList.toggle('spin', state.locating);
+  lb.setAttribute('aria-label', t.myLoc); lb.title = t.myLoc;
+  const sb = $('#soundBtn'), pending = state.sound && !AC;
+  sb.innerHTML = icon(state.sound ? 'vol' : 'volX', 20) + (pending ? '<span class="dot"></span>' : '');
+  const lbl = pending ? t.soundPending : state.sound ? t.soundOn : t.soundOff;
+  sb.setAttribute('aria-label', lbl); sb.title = lbl;
+  sb.setAttribute('aria-pressed', state.sound);
+  const lg = $('#langBtn');
+  lg.textContent = t.langBtn; lg.setAttribute('aria-label', t.langLbl); lg.title = t.langLbl;
+}
+
+function renderNotices() {
+  const t = L(), box = $('#notices');
+  let html = '';
+  if (state.locating) {
+    html += `<div class="notice glass">${icon('loader', 22, 'style="animation:spin 1s linear infinite"')}<div class="txt"><p class="ttl">${t.locating}</p><p class="body">${t.locatingBody}</p></div></div>`;
+  } else if (state.notice === 'denied') {
+    html += `<div class="notice glass">${icon('pin', 22)}<div class="txt"><p class="ttl">${t.deniedTitle}</p><p class="body">${t.denied}</p></div>
+      <div class="btns"><button class="btn" data-act="focusSearch">${icon('search', 16)}${t.pickCity}</button><button class="btn ghost" data-act="dismiss">${t.dismiss}</button></div></div>`;
+  } else if (state.notice === 'error') {
+    html += `<div class="notice glass err">${icon('alert', 22)}<div class="txt"><p class="ttl">${t.errTitle}</p><p class="body">${t.err}</p></div>
+      <div class="btns"><button class="btn primary" data-act="retry">${icon('refresh', 16)}${t.retry}</button></div></div>`;
+  } else if (state.onboarding) {
+    html += `<div class="notice glass">${icon('pin', 22)}<div class="txt"><p class="ttl">${t.onbTitle}</p><p class="body">${t.onbBody}</p></div>
+      <div class="btns"><button class="btn primary" data-act="locate">${icon('locate', 16)}${t.useLoc}</button>
+      <button class="btn" data-act="pickCity">${t.pickCity}</button><button class="btn ghost" data-act="later">${t.later}</button></div></div>`;
+  }
+  box.innerHTML = html;
+}
+
+function renderHero(animate) {
+  const c = city(), t = L(), loc = c[state.lang], d0 = c.days[0];
+  const day = isDayAt(c, mins(c.clock));
+  const isHome = state.home === c.id;
+  $('#hero').innerHTML = `
+    <div class="place">
+      <h1 data-sk>${loc.name}</h1>
+      ${state.fromGeo && c.id === GEO_ID ? `<span class="chip">${icon('locate', 13)}${t.yourLoc}</span>` : ''}
+      <button class="home-btn" data-act="home" aria-pressed="${isHome}">${icon('star', 15)}<span>${isHome ? t.isHome : t.makeHome}</span></button>
+    </div>
+    <p class="meta" data-sk><span>${loc.country}</span><span aria-hidden="true">·</span><span>${t.localTime} <span class="n">${c.clock}</span></span><span class="demo">${t.demo}</span></p>
+    <p class="temp" data-sk><span class="n"><span id="tempNum">${tNum(c.temp)}</span>°</span></p>
+    <p class="cond" data-sk>${icon(condIcon(c.cond, day), 30)}<span>${t.cond[c.cond]}</span></p>
+    <p class="sub" data-sk><span>${t.feels} <b>${tH(c.feels)}</b></span><span>${t.hi} <b>${tH(d0.hi)}</b></span><span>${t.lo} <b>${tH(d0.lo)}</b></span></p>`;
+  const to = tNum(c.temp);
+  if (animate && shownTemp != null && shownTemp !== to && !reduceMotion) {
+    const el = $('#tempNum'), from = shownTemp, t0 = performance.now();
+    const step = now => {
+      const k = Math.min(1, (now - t0) / 650), e = 1 - Math.pow(1 - k, 3);
+      el.textContent = Math.round(from + (to - from) * e);
+      if (k < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+  shownTemp = to;
+}
+
+function renderWind() {
+  const c = city(), t = L();
+  const dirIdx = Math.round(c.dir / 45) % 8;
+  const ticks = Array.from({ length: 24 }, (_, i) => {
+    const a = i * 15 * Math.PI / 180, major = i % 6 === 0;
+    const r1 = major ? 39 : 42, r2 = 46;
+    return `<line x1="${50 + Math.sin(a) * r1}" y1="${50 - Math.cos(a) * r1}" x2="${50 + Math.sin(a) * r2}" y2="${50 - Math.cos(a) * r2}" stroke="rgba(255,255,255,${major ? .55 : .2})" stroke-width="${major ? 1.6 : 1}"/>`;
+  }).join('');
+  const letters = t.compass.map((l, i) => {
+    const a = i * 90 * Math.PI / 180;
+    return `<text x="${50 + Math.sin(a) * 30}" y="${50 - Math.cos(a) * 30 + 4}" text-anchor="middle" font-size="10" fill="${i === 0 ? '#FFC873' : 'rgba(255,255,255,.6)'}" font-family="Readex Pro, sans-serif">${l}</text>`;
+  }).join('');
+  $('#windCard').innerHTML = `
+    <h2>${icon('wind', 16)}${t.wind}</h2>
+    <div class="metric" data-sk>
+      <svg class="dial" viewBox="0 0 100 100" aria-hidden="true">
+        <circle cx="50" cy="50" r="46" fill="rgba(255,255,255,.04)"/>${ticks}${letters}
+        <g class="arrow" style="transform:rotate(${c.dir + 180}deg)">
+          <path d="M50 26 L56 38 L51.5 36 L51.5 72 L48.5 72 L48.5 36 L44 38 Z" fill="#F5F8FD"/>
+          <circle cx="50" cy="50" r="3.2" fill="#0E1626" stroke="#F5F8FD" stroke-width="1.5"/>
+        </g>
+      </svg>
+      <div>
+        <p class="big"><span class="n">${wNum(c.wind)}</span><small>${wUnit()}</small></p>
+        <p class="lbl">${t.from} ${t.dirs[dirIdx]}</p>
+        <p class="lbl2">${t.gusts} <span class="n">${wNum(c.gust)}</span></p>
+      </div>
+    </div>`;
+}
+
+function renderHum() {
+  const c = city(), t = L(), h = c.hum;
+  const a = 17.62, b = 243.12, al = Math.log(h / 100) + a * c.temp / (b + c.temp);
+  const dew = b * al / (a - al);
+  const comfort = t.comfort[h < 30 ? 0 : h < 60 ? 1 : h < 80 ? 2 : 3];
+  const C = 2 * Math.PI * 40;
+  $('#humCard').innerHTML = `
+    <h2>${icon('drop', 16)}${t.humidity}</h2>
+    <div class="metric" data-sk>
+      <svg class="dial" viewBox="0 0 100 100" aria-hidden="true">
+        <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="8"/>
+        <circle class="ring" cx="50" cy="50" r="40" fill="none" stroke="#8FD3FF" stroke-width="8" stroke-linecap="round"
+          stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - h / 100)}" transform="rotate(-90 50 50)"/>
+        <g transform="translate(38 38)" stroke="#8FD3FF" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${IC.drop}</g>
+      </svg>
+      <div>
+        <p class="big"><span class="n">${h}%</span></p>
+        <p class="lbl">${comfort}</p>
+        <p class="lbl2">${t.dew} ${tH(dew)}</p>
+      </div>
+    </div>`;
+}
+
+function hourlyData(c) {
+  const now = mins(c.clock), h0 = Math.floor(now / 60);
+  const base = (h, d) => d.lo + (d.hi - d.lo) * (0.5 + 0.5 * Math.cos(((h - 14) / 24) * 2 * Math.PI));
+  const off = c.temp - base(h0, c.days[0]);
+  const sr = Math.floor(mins(c.sunrise) / 60), ss = Math.floor(mins(c.sunset) / 60);
+  return Array.from({ length: 24 }, (_, i) => {
+    const abs = h0 + i, hr = abs % 24, di = abs >= 24 ? 1 : 0, d = c.days[di];
+    const cond = i === 0 ? c.cond : (i < 9 ? c.cond : d.cond);
+    const rainy = ['rain', 'drizzle', 'storm', 'snow'].includes(cond);
+    const p = Math.round(Math.min(100, d.p * (rainy ? 1 : 0.3) * (0.7 + ((i * 37) % 17) / 28)) / 5) * 5;
+    return {
+      i, hr, cond, day: isDayAt(c, hr * 60 + 30),
+      temp: i === 0 ? c.temp : base(hr, d) + off * Math.max(0, 1 - i / 6),
+      p: rainy || p >= 30 ? p : 0,
+      ev: i > 0 && hr === sr ? 'sunrise' : i > 0 && hr === ss ? 'sunset' : null
+    };
+  });
+}
+
+function renderHourly() {
+  const c = city(), t = L(), rtl = isRTL();
+  const hrs = hourlyData(c);
+  const vals = hrs.map(h => cvt(h.temp));
+  const mn = Math.min(...vals), mx = Math.max(...vals);
+  const CW = 60, SH = 84, top = 26, bot = 10;
+  const pts = vals.map((v, i) => {
+    const x = rtl ? 1440 - (i + 0.5) * CW : (i + 0.5) * CW;
+    const y = top + (1 - (v - mn) / ((mx - mn) || 1)) * (SH - top - bot);
+    return [x, y];
+  });
+  let d = `M${pts[0][0]},${pts[0][1]}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
+    const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+    const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+    d += ` C${c1[0].toFixed(1)},${c1[1].toFixed(1)} ${c2[0].toFixed(1)},${c2[1].toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`;
+  }
+  const area = `${d} L${pts[23][0]},${SH} L${pts[0][0]},${SH} Z`;
+  const cells = hrs.map((h, i) => {
+    const time = i === 0 ? t.now : `${String(h.hr).padStart(2, '0')}:00`;
+    const ev = h.ev ? `<span class="ev">${t[h.ev]}</span>` : '';
+    return `<div class="tm ${i === 0 ? 'now' : ''}" style="grid-column:${i + 1}"><span class="n">${time}</span>${ev}</div>
+      <div class="ic" style="grid-column:${i + 1}">${icon(condIcon(h.cond, h.day), 22)}</div>
+      <div class="pp" style="grid-column:${i + 1}">${h.p ? `<span class="n">${h.p}%</span>` : ''}</div>`;
+  }).join('');
+  const labels = pts.map(([x, y], i) =>
+    `<circle cx="${x}" cy="${y}" r="${i === 0 ? 4.5 : 2.6}" fill="${i === 0 ? '#FFC873' : '#F5F8FD'}" ${i === 0 ? 'stroke="rgba(255,200,115,.35)" stroke-width="6"' : ''}/>
+     <text x="${x}" y="${y - 10}" text-anchor="middle">${tS(hrs[i].temp)}</text>`).join('');
+  $('#hourCard').innerHTML = `
+    <h2>${icon('clock', 16)}${t.hourly}</h2>
+    <div class="hours" data-sk><div class="track">
+      ${cells}
+      <svg class="curve" viewBox="0 0 1440 ${SH}" aria-hidden="true">
+        <defs><linearGradient id="hg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>
+        <path d="${area}" fill="url(#hg)"/>
+        <path d="${d}" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="2" stroke-linecap="round"/>
+        ${labels}
+      </svg>
+    </div></div>`;
+  $('#hourCard .hours').scrollLeft = 0;
+}
+
+const TSTOPS = [[-10, '#6EB6FF'], [5, '#7FD4F0'], [15, '#9BE7C4'], [25, '#FFD36B'], [35, '#FF9A5B'], [45, '#FF6B5B']];
+function tempColor(c) {
+  if (c <= TSTOPS[0][0]) return TSTOPS[0][1];
+  for (let i = 1; i < TSTOPS.length; i++) {
+    if (c <= TSTOPS[i][0]) {
+      const [a, ca] = TSTOPS[i - 1], [b, cb] = TSTOPS[i];
+      return rgba(mixC(hx(ca), hx(cb), (c - a) / (b - a)));
+    }
+  }
+  return TSTOPS[TSTOPS.length - 1][1];
+}
+function renderDaily() {
+  const c = city(), t = L(), rtl = isRTL();
+  const lo = Math.min(...c.days.map(d => d.lo)), hi = Math.max(...c.days.map(d => d.hi)), span = (hi - lo) || 1;
+  const fmt = new Intl.DateTimeFormat(t.locale, { weekday: 'long', timeZone: 'UTC' });
+  const rows = c.days.map((d, i) => {
+    const name = i === 0 ? t.today : i === 1 ? t.tomorrow : fmt.format(new Date(BASE_DATE.getTime() + i * 864e5));
+    const s = (d.lo - lo) / span * 100, w = (d.hi - d.lo) / span * 100;
+    const grad = `linear-gradient(${rtl ? 'to left' : 'to right'}, ${tempColor(d.lo)}, ${tempColor(d.hi)})`;
+    const nowDot = i === 0 ? `<span class="now" style="inset-inline-start:${(c.temp - lo) / span * 100}%"></span>` : '';
+    return `<li class="day">
+      <span class="dn">${name}</span>
+      <span class="di">${icon(condIcon(d.cond, true), 24)}${d.p >= 20 ? `<small class="n">${d.p}%</small>` : ''}</span>
+      <span class="lo">${tH(d.lo)}</span>
+      <span class="bar"><span class="fill" style="inset-inline-start:${s}%;width:${Math.max(w, 4)}%;background:${grad}"></span>${nowDot}</span>
+      <span class="hi">${tH(d.hi)}</span>
+    </li>`;
+  }).join('');
+  $('#dayCard').innerHTML = `<h2>${icon('calendar', 16)}${t.daily}</h2><ul class="days" data-sk>${rows}</ul>`;
+}
+
+function renderAll(animate) {
+  renderStatic(); renderNotices(); renderHero(animate); renderWind(); renderHum(); renderHourly(); renderDaily();
+}
+
+/* ================= search ================= */
+const q = $('#q'), sugg = $('#sugg');
+let active = -1, items = [], debounce;
+function openList(html) {
+  sugg.innerHTML = html; sugg.hidden = false; q.setAttribute('aria-expanded', 'true');
+}
+function closeList() { sugg.hidden = true; q.setAttribute('aria-expanded', 'false'); active = -1; q.removeAttribute('aria-activedescendant'); }
+function optHTML(c, i) {
+  const loc = c[state.lang];
+  return `<div class="opt" role="option" id="opt-${i}" data-id="${c.id}" aria-selected="false">
+    <span class="flag">${c.cc}</span>
+    <span><span class="nm">${loc.name}</span> <span class="ct">${loc.country}</span></span>
+    <span class="tp">${icon(condIcon(c.cond, isDayAt(c, mins(c.clock))), 18)}${tH(c.temp)}</span></div>`;
+}
+function showResults() {
+  const v = norm(q.value), t = L();
+  if (!v) {
+    items = state.recents.map(id => CITIES.find(c => c.id === id)).filter(Boolean);
+    if (!items.length) { closeList(); return; }
+    openList(`<p class="hd">${t.recent}</p>` + items.map(optHTML).join(''));
+  } else if (v.length < 2) {
+    closeList(); return;
+  } else {
+    items = CITIES.filter(c => [c.ar.name, c.en.name, c.ar.country, c.en.country].some(s => norm(s).includes(v))).slice(0, 6);
+    if (!items.length) {
+      openList(`<p class="empty"></p>`);
+      sugg.querySelector('.empty').textContent = t.noRes(q.value.trim());
+    } else openList(`<p class="hd">${t.results}</p>` + items.map(optHTML).join(''));
+  }
+  active = -1;
+}
+function setActive(i) {
+  const opts = sugg.querySelectorAll('.opt');
+  if (!opts.length) return;
+  active = (i + opts.length) % opts.length;
+  opts.forEach((o, k) => o.setAttribute('aria-selected', k === active));
+  q.setAttribute('aria-activedescendant', opts[active].id);
+  prefetch(opts[active].dataset.id);
+}
+function prefetch(id) {
+  if (prefetched.has(id)) return;
+  prefetched.add(id);
+  const c = CITIES.find(x => x.id === id);
+  $('#pfLog').textContent = `prefetch ✓ ${c.ar.name}`;
+}
+q.addEventListener('input', () => { clearTimeout(debounce); debounce = setTimeout(showResults, 200); });
+q.addEventListener('focus', showResults);
+q.addEventListener('keydown', e => {
+  if (e.key === 'ArrowDown') { e.preventDefault(); if (sugg.hidden) showResults(); setActive(active + 1); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(active - 1); }
+  else if (e.key === 'Enter') {
+    const opts = sugg.querySelectorAll('.opt');
+    const pick = opts[active] || opts[0];
+    if (pick) { e.preventDefault(); selectCity(pick.dataset.id); }
+  } else if (e.key === 'Escape') { closeList(); }
+});
+sugg.addEventListener('pointerover', e => { const o = e.target.closest('.opt'); if (o) prefetch(o.dataset.id); });
+sugg.addEventListener('pointerdown', e => e.preventDefault());
+sugg.addEventListener('click', e => { const o = e.target.closest('.opt'); if (o) selectCity(o.dataset.id); });
+document.addEventListener('pointerdown', e => { if (!e.target.closest('#searchBox')) closeList(); });
+
+let loadTimer;
+function setLoading(on) { app.classList.toggle('is-loading', on); }
+function selectCity(id, opts = {}) {
+  closeList(); q.value = ''; q.blur();
+  state.recents = [id, ...state.recents.filter(x => x !== id)].slice(0, 5);
+  store.set('recents', state.recents);
+  state.fromGeo = !!opts.geo;
+  if (state.notice === 'denied') state.notice = null;
+  const fast = prefetched.has(id);
+  setLoading(true);
+  clearTimeout(loadTimer);
+  loadTimer = setTimeout(() => {
+    state.cityId = id;
+    setLoading(state.ui === 'loading');
+    renderAll(true);
+    updateScene(false);
+  }, fast ? 90 : 700);
+}
+
+/* ================= actions ================= */
+function locate() {
+  state.onboarding = false; store.set('onboarded', true);
+  state.locating = true; state.notice = null;
+  renderActions(); renderNotices();
+  setTimeout(() => {
+    state.locating = false;
+    if (state.ui === 'denied') { state.notice = 'denied'; renderActions(); renderNotices(); return; }
+    renderActions();
+    selectCity(GEO_ID, { geo: true });
+  }, 1300);
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]');
+  if (!b) return;
+  const act = b.dataset.act;
+  if (act === 'home') {
+    state.home = state.home === state.cityId ? null : state.cityId;
+    store.set('home', state.home); renderHero(false);
+  } else if (act === 'locate') locate();
+  else if (act === 'pickCity' || act === 'focusSearch') {
+    state.onboarding = false; store.set('onboarded', true); renderNotices(); q.focus();
+  } else if (act === 'later') { state.onboarding = false; store.set('onboarded', true); renderNotices(); }
+  else if (act === 'dismiss') { state.notice = null; renderNotices(); }
+  else if (act === 'retry') {
+    state.ui = 'normal'; state.notice = null; syncChips(); renderNotices();
+    setLoading(true); setTimeout(() => setLoading(false), 600);
+  }
+});
+$('#locBtn').addEventListener('click', locate);
+$('#soundBtn').addEventListener('click', () => {
+  if (performance.now() - unlockedAt < 800) return; // first tap only unlocks audio
+  state.sound = !state.sound; store.set('sound', state.sound);
+  if (state.sound) unlock();
+  applyMaster(); renderActions();
+});
+$('#langBtn').addEventListener('click', () => {
+  state.lang = state.lang === 'ar' ? 'en' : 'ar'; store.set('lang', state.lang);
+  renderAll(false); if (!sugg.hidden) showResults();
+});
+$('#uC').addEventListener('click', () => { state.units = 'metric'; store.set('units', 'metric'); renderAll(false); });
+$('#uF').addEventListener('click', () => { state.units = 'imperial'; store.set('units', 'imperial'); renderAll(false); });
+addEventListener('resize', resize);
+
+/* ================= review panel ================= */
+const RV = {
+  rvScene: [[null, 'من المدينة'], ['clear', 'صافٍ'], ['partly', 'غائم جزئياً'], ['overcast', 'غائم'], ['fog', 'ضباب'], ['drizzle', 'رذاذ'], ['rain', 'مطر'], ['snow', 'ثلج'], ['storm', 'عاصفة']],
+  rvTime: [[null, 'من المدينة'], ['day', 'نهار'], ['golden', 'غروب'], ['night', 'ليل']],
+  rvState: [['normal', 'عادي'], ['loading', 'تحميل'], ['error', 'خطأ شبكة'], ['denied', 'رفض الموقع'], ['onboarding', 'أول زيارة']],
+  rvView: [['desktop', 'ديسكتوب'], ['phone', 'موبايل']]
+};
+function syncChips() {
+  const val = { rvScene: state.sceneOverride, rvTime: state.timeOverride, rvState: state.ui, rvView: document.body.classList.contains('phone') ? 'phone' : 'desktop' };
+  for (const k in RV) $('#' + k).querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === String(val[k]))));
+}
+for (const k in RV) {
+  $('#' + k).innerHTML = RV[k].map(([v, l]) => {
+    const ic = k === 'rvScene' && v ? icon(condIcon(v, true), 15) : '';
+    return `<button type="button" data-v="${v}">${ic}${l}</button>`;
+  }).join('');
+  $('#' + k).addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    const v = b.dataset.v === 'null' ? null : b.dataset.v;
+    if (k === 'rvScene') { state.sceneOverride = v; updateScene(false); }
+    if (k === 'rvTime') { state.timeOverride = v; updateScene(false); }
+    if (k === 'rvView') { document.body.classList.toggle('phone', v === 'phone'); }
+    if (k === 'rvState') {
+      state.ui = v; state.locating = false;
+      state.notice = v === 'error' ? 'error' : v === 'denied' ? 'denied' : null;
+      state.onboarding = v === 'onboarding';
+      setLoading(v === 'loading');
+      renderActions(); renderNotices();
+    }
+    syncChips();
+  });
+}
+$('#rvSum').innerHTML = `${icon('sliders', 18)}<span>لوحة المراجعة</span><small>جرّب المشاهد والحالات · للتصميم فقط</small>`;
+
+/* ================= boot ================= */
+renderAll(false);
+initScene();
+updateScene(true);
+syncChips();
+requestAnimationFrame(t0 => { last = t0; requestAnimationFrame(frame); });
+})();
+</script>

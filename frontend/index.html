@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0B1220" />
+    <meta name="description" content="سحاب — طقس أي مدينة بخلفية ثلاثية الأبعاد حيّة تتغير مع الطقس." />
+    <title>سحاب · Sahab</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alexandria:wght@500;600&family=Readex+Pro:wght@200;300;400;500;600&display=swap" />
+    <!-- Sky gradient shown before the 3D canvas boots: last visit's sky if we have it, so reloads don't flash. -->
+    <style>html,body{background:linear-gradient(var(--boot-top,#3A82C8) 0%,var(--boot-hor,#B4D5EC) 72%,#141C2A 72%,#0B1220 100%) fixed;}</style>
+    <script>
+      try {
+        var s = JSON.parse(localStorage.getItem('sahab.scene') || 'null');
+        if (s) {
+          var c = function (a) { return 'rgb(' + a.map(Math.round).join(',') + ')'; };
+          document.documentElement.style.setProperty('--boot-top', c(s.top));
+          document.documentElement.style.setProperty('--boot-hor', c(s.hor));
+        }
+        if (localStorage.getItem('sahab.lang') === '"en"') { document.documentElement.lang = 'en'; document.documentElement.dir = 'ltr'; }
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
