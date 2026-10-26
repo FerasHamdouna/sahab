@@ -84,7 +84,8 @@ git push -u origin main
 |--------|--------|
 | GitHub | `FerasHamdouna/sahab` (Private) |
 | Render workspace | My Workspace (`tea-da21crc9v7es738gg6sg`) |
-| الباك إند | `sahab-api` · https://sahab-api.onrender.com · Frankfurt · auto-deploy من `main` |
+| **الموقع** | **https://sahab-lovat.vercel.app** · Vercel project `sahab` (Hobby) · auto-deploy من `main` |
+| الباك إند | `sahab-api` · https://sahab-api.onrender.com · Frankfurt · auto-deploy من `main` · `CORS_ORIGINS` يسمح للموقع |
 | القاعدة | `sahab-db` · PostgreSQL 17 · Frankfurt · **تنتهي 2026-11-25** |
 
 ملاحظة: الخدمة انعملت عبر Render connector مش عبر Blueprint، فـ `render.yaml` موجود كمرجع ولإعادة البناء من الصفر.
