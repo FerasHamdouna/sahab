@@ -10,8 +10,12 @@ export interface WeatherProvider {
   weather(lat: number, lon: number): Promise<Omit<WeatherResponse, 'meta'> & { meta: Omit<WeatherResponse['meta'], 'cached'> }>;
 }
 
-const GEO = 'https://geocoding-api.open-meteo.com/v1/search';
-const FORECAST = 'https://api.open-meteo.com/v1/forecast';
+// With an Open-Meteo API key the server uses the commercial hosts and its own quota. The free
+// hosts limit by IP, and free cloud plans (Render) share outbound IPs, so they often answer 429.
+const KEY = config.openMeteoApiKey;
+const GEO = KEY ? 'https://customer-geocoding-api.open-meteo.com/v1/search' : 'https://geocoding-api.open-meteo.com/v1/search';
+const FORECAST = KEY ? 'https://customer-api.open-meteo.com/v1/forecast' : 'https://api.open-meteo.com/v1/forecast';
+const withKey = (url: string) => (KEY ? `${url}&apikey=${encodeURIComponent(KEY)}` : url);
 const REVERSE = 'https://api.bigdatacloud.net/data/reverse-geocode-client';
 
 async function getJson<T>(url: string): Promise<T> {
@@ -21,7 +25,11 @@ async function getJson<T>(url: string): Promise<T> {
   } catch {
     throw new ApiError('UPSTREAM_ERROR', 'Weather provider is unreachable');
   }
-  if (!res.ok) throw new ApiError('UPSTREAM_ERROR', `Weather provider answered ${res.status}`);
+  if (!res.ok) {
+    const reason = await res.text().catch(() => '');
+    console.warn(`[upstream] ${new URL(url).host} answered ${res.status}: ${reason.slice(0, 200)}`);
+    throw new ApiError('UPSTREAM_ERROR', `Weather provider answered ${res.status}`);
+  }
   return (await res.json()) as T;
 }
 
@@ -50,7 +58,7 @@ export const openMeteo: WeatherProvider = {
 
   async geocode(query, lang, limit) {
     const url = `${GEO}?name=${encodeURIComponent(query)}&count=${limit}&language=${lang}&format=json`;
-    const j = await getJson<{ results?: GeoResult[] }>(url);
+    const j = await getJson<{ results?: GeoResult[] }>(withKey(url));
     return (j.results ?? []).map((r) => ({
       id: `om:${r.id}`,
       name: r.name,
@@ -90,7 +98,7 @@ export const openMeteo: WeatherProvider = {
       forecast_days: '8',
       wind_speed_unit: 'kmh',
     });
-    return normalizeForecast(await getJson<ForecastResponse>(`${FORECAST}?${params}`), lat, lon);
+    return normalizeForecast(await getJson<ForecastResponse>(withKey(`${FORECAST}?${params}`)), lat, lon);
   },
 };
 

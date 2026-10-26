@@ -17,4 +17,6 @@ export const config = {
     reverseSec: 30 * 24 * 60 * 60,
   },
   upstreamTimeoutMs: 8000,
+  /** Optional paid Open-Meteo key (own quota instead of the shared-IP free limit). */
+  openMeteoApiKey: process.env.OPEN_METEO_API_KEY?.trim() || '',
 };
