@@ -78,6 +78,23 @@ git push -u origin main
 
 ---
 
+## الموارد المنشورة فعلياً (2026-10-26)
+
+| المورد | القيمة |
+|--------|--------|
+| GitHub | `FerasHamdouna/sahab` (Private) |
+| Render workspace | My Workspace (`tea-da21crc9v7es738gg6sg`) |
+| الباك إند | `sahab-api` · https://sahab-api.onrender.com · Frankfurt · auto-deploy من `main` |
+| القاعدة | `sahab-db` · PostgreSQL 17 · Frankfurt · **تنتهي 2026-11-25** |
+
+ملاحظة: الخدمة انعملت عبر Render connector مش عبر Blueprint، فـ `render.yaml` موجود كمرجع ولإعادة البناء من الصفر.
+
+## Open-Meteo و 429 على الاستضافة المجانية
+
+Render المجاني بيطلع للإنترنت من **IPs مشتركة**، و Open-Meteo المجاني بيحدّ الطلبات **لكل IP**، فطلبات `/forecast` من السيرفر بترجع **429**.
+- **الحل الحالي:** الفرونت إند لما يشوف هالخطأ بيجيب الطقس من Open-Meteo مباشرة من متصفح المستخدم (IP المستخدم نفسه). الموقع ما بيوقف.
+- **الحل الكامل:** مفتاح Open-Meteo مدفوع ← حطه بـ `OPEN_METEO_API_KEY` بخدمة Render، فيصير للسيرفر حصته الخاصة ويرجع الكاش يخدم الكل.
+
 ## حدود الخطة المجانية (مهم)
 
 | الخدمة | الحد | الأثر |

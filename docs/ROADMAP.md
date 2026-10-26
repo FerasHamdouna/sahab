@@ -96,8 +96,10 @@
 ## المرحلة 4 — الإطلاق 🚀 ← *التالي*
 - [x] Git + أول commit
 - [x] ملفات النشر: `render.yaml` + `frontend/vercel.json` + [DEPLOY.md](DEPLOY.md)
-- [ ] رفع المستودع على GitHub
-- [ ] Deploy (فرونت + باك)
+- [x] رفع المستودع على GitHub (`FerasHamdouna/sahab`, Private)
+- [x] الباك إند + PostgreSQL على Render (https://sahab-api.onrender.com) ومتصلين
+- [x] حل 429 من Open-Meteo على IPs Render المشتركة (fallback من المتصفح)
+- [ ] الفرونت إند على Vercel + `VITE_API_URL` + تحديث `CORS_ORIGINS`
 - [ ] دومين + HTTPS
 - [ ] SEO أساسي + Open Graph image
 - [ ] مراقبة الأخطاء
