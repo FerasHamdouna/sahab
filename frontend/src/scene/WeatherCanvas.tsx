@@ -111,6 +111,9 @@ export function WeatherCanvas() {
         flat
         frameloop={compiled ? 'always' : 'never'}
         dpr={DPR[quality]}
+        // Don't re-measure on scroll (the canvas is fixed), and coalesce real resizes (rotation,
+        // window resize) into one instead of reallocating buffers on every intermediate size.
+        resize={{ scroll: false, debounce: { scroll: 0, resize: 150 } }}
         gl={{ antialias: false, powerPreference: 'high-performance', alpha: false, stencil: false }}
         camera={{ fov: 55, near: 0.1, far: 5000, position: [0, 2, 12] }}
       >

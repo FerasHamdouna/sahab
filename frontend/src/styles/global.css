@@ -46,14 +46,18 @@ ul { list-style: none; }
 .spin { animation: spin 1s linear infinite; }
 @keyframes spin { to { rotate: 360deg; } }
 
-.sky-canvas, .sky-fallback { position: fixed; inset: 0; z-index: 0; }
+/* Sized to the *large* viewport (address bar hidden), not inset:0. On phones the bar slides in and
+   out while scrolling; with inset:0 every frame of that changed the canvas size, which re-rendered
+   the 3D scene at a new aspect (horizon jump + flash). A fixed size never resizes mid-scroll. */
+.sky-canvas, .sky-fallback { position: fixed; top: 0; inset-inline: 0; height: 100vh; height: 100lvh; z-index: 0; }
 .sky-canvas canvas { display: block; }
 .sky-canvas { opacity: 0; transition: opacity .7s ease; }
 .sky-canvas.shown { opacity: 1; }
 .sky-fallback { background: linear-gradient(var(--sky-top) 0%, var(--sky-hor) 72%, var(--ground) 72%); transition: background 1.2s; }
 
 .stage {
-  position: relative; z-index: 1; min-height: 100vh; min-height: 100dvh;
+  /* svh, not dvh: dvh changes while the address bar animates and re-lays out the page every frame */
+  position: relative; z-index: 1; min-height: 100vh; min-height: 100svh;
   padding-block: max(16px, env(safe-area-inset-top, 0px)) 40px;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
