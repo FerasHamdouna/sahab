@@ -1,5 +1,5 @@
 import type { WeatherProvider } from './types';
-import { backendProvider } from './providers/backend';
+import { backendProvider, wakeBackend } from './providers/backend';
 import { mockProvider } from './providers/mock';
 import { openMeteoProvider } from './providers/openMeteo';
 
@@ -18,4 +18,5 @@ function pick(): WeatherProvider {
 }
 
 export const provider = pick();
+if (provider === backendProvider && typeof window !== 'undefined') wakeBackend();
 export * from './types';

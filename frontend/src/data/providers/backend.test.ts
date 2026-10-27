@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { backendProvider } from './backend';
+import { BACKEND_TIMEOUT_MS, backendProvider } from './backend';
 import { openMeteoProvider } from './openMeteo';
 import type { Place, WeatherData } from '../types';
 
@@ -29,6 +29,22 @@ describe('backendProvider fallback', () => {
     const direct = vi.spyOn(openMeteoProvider, 'geocode').mockResolvedValue([place]);
     expect(await backendProvider.geocode('amman', 'en')).toEqual([place]);
     expect(direct).toHaveBeenCalled();
+  });
+
+  it('stops waiting for a sleeping backend and fetches directly', async () => {
+    vi.useFakeTimers();
+    // A cold free-tier host: the request just hangs until it's aborted.
+    vi.stubGlobal('fetch', vi.fn((_url: string, init?: RequestInit) => new Promise<Response>((_, reject) => {
+      init?.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')));
+    })));
+    const direct = vi.spyOn(openMeteoProvider, 'weather').mockResolvedValue({ location: { ...place, utcOffsetSeconds: 0 } } as WeatherData);
+    const pending = backendProvider.weather(place);
+    await vi.advanceTimersByTimeAsync(BACKEND_TIMEOUT_MS - 1);
+    expect(direct).not.toHaveBeenCalled(); // still giving the backend its chance
+    await vi.advanceTimersByTimeAsync(1);
+    await pending;
+    expect(direct).toHaveBeenCalledWith(place);
+    vi.useRealTimers();
   });
 
   it('does not hide real request errors behind the fallback', async () => {

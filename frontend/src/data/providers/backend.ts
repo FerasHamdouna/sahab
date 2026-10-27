@@ -2,14 +2,25 @@ import { ProviderError, type Place, type WeatherData, type WeatherProvider } fro
 import { openMeteoProvider } from './openMeteo';
 
 // Same origin by default: Vite proxies /api to the backend in dev and preview.
-const BASE = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '') + '/api/v1';
+const ORIGIN = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '');
+const BASE = ORIGIN + '/api/v1';
+
+/**
+ * A warm backend answers in well under a second. A free-tier host that went to sleep takes
+ * 30–60 s to wake, so after this long we stop waiting and let the browser fetch directly.
+ */
+export const BACKEND_TIMEOUT_MS = 3500;
 
 async function get<T>(path: string): Promise<T> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), BACKEND_TIMEOUT_MS);
   let res: Response;
   try {
-    res = await fetch(`${BASE}${path}`);
+    res = await fetch(`${BASE}${path}`, { signal: ctrl.signal });
   } catch {
-    throw new ProviderError('UPSTREAM_ERROR', 'network');
+    throw new ProviderError('UPSTREAM_ERROR', ctrl.signal.aborted ? 'backend timeout' : 'network');
+  } finally {
+    clearTimeout(timer);
   }
   if (!res.ok) {
     const body = (await res.json().catch(() => null)) as { error?: { code?: string; message?: string } } | null;
@@ -20,6 +31,14 @@ async function get<T>(path: string): Promise<T> {
     );
   }
   return res.json() as Promise<T>;
+}
+
+/**
+ * Fire-and-forget ping on page load. If the free-tier backend is asleep this starts waking it while
+ * the first requests fall back to the browser, so the next ones go through the backend again.
+ */
+export function wakeBackend() {
+  fetch(`${ORIGIN}/api/health`, { cache: 'no-store' }).catch(() => {});
 }
 
 type BackendWeather = Omit<WeatherData, 'location'> & { location: { timezone: string; utcOffsetSeconds: number } };
