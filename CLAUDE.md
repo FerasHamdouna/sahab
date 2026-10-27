@@ -39,6 +39,11 @@ Weather website with a live 3D background that reflects the searched city's weat
 - The canvas stays at opacity 0 with the render loop paused until `compileAsync` finishes and a real target exists, then snaps to it and fades in. Never show a default/placeholder sky.
 - Quality is fixed on `low` (DPR 1, vignette, no bloom) by the user's choice; there is no automatic quality switching, because re-sizing the canvas mid-session caused visible hitches. Rain (16k) and snow (7k) stay at full density on every tier. Don't reintroduce adaptive quality without asking.
 
+## Mobile (don't regress)
+- The fixed sky container is sized `height: 100lvh` (not `inset: 0`), the page uses `100svh` (not `dvh`), and the Canvas has `resize={{ scroll: false, debounce }}`. Anything that lets the canvas size follow the mobile address bar re-renders the scene on every scroll (visible jump/flash).
+- Audio is created/resumed only inside activation gestures (pointerup/touchend/click/keydown), never on mount or touch pointerdown.
+- Nothing may extend past the 16px page gutter: in RTL any left overflow becomes a sideways scroll of the whole page.
+
 ## Shader conventions
 - Every scene material spreads the shared `U` uniforms from `src/scene/uniforms.ts`; `stepScene` is the only writer.
 - Fragment shaders compute in **linear** color and end with `#include <colorspace_fragment>` (works with and without the postprocessing composer). Dark tones must be very small linear values (0.01–0.03), or they render as mid-gray.
