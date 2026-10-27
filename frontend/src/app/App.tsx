@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useRef } from 'react';
 import { useApp, useT } from '../state/appStore';
-import { useBootPlace, useRefreshGeoHome, useSceneSync, useWeather } from './hooks';
+import { useBootPlace, useLocalizedPlace, useRefreshGeoHome, useSceneSync, useWeather } from './hooks';
 import { Header } from '../features/header/Header';
 import { Notices } from '../features/notices/Notices';
 import { Hero, HumidityCard, WindCard } from '../features/current/Current';
@@ -29,6 +29,7 @@ export function App() {
 
   useBootPlace();
   useRefreshGeoHome();
+  useLocalizedPlace();
   const q = useWeather(place);
   const data = q.data;
   useSceneSync(data);

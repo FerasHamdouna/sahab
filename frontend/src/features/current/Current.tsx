@@ -39,11 +39,13 @@ export function Hero({ data }: { data: WeatherData }) {
   useNow(30_000);
   const c = data.current, d0 = data.daily[0];
   const isHome = !!home && !!place && home.id === place.id;
+  // Names come from the selected place (renamed on language switch), not the cached weather payload.
+  const shown = place && place.id === data.location.id ? place : data.location;
   const temp = useTween(tempNum(c.temperature, units));
   return (
     <section className="hero" aria-live="polite">
       <div className="place">
-        <h1 data-sk>{data.location.name}</h1>
+        <h1 data-sk>{shown.name}</h1>
         {fromGeo && <span className="chip"><Icon name="locate" size={13} />{t.yourLoc}</span>}
         <button className="home-btn" aria-pressed={isHome} onClick={toggleHome}>
           <Icon name="star" size={15} />
@@ -51,7 +53,7 @@ export function Hero({ data }: { data: WeatherData }) {
         </button>
       </div>
       <p className="meta" data-sk>
-        {data.location.country && <><span>{data.location.country}</span><span aria-hidden="true">·</span></>}
+        {shown.country && <><span>{shown.country}</span><span aria-hidden="true">·</span></>}
         <span>{t.localTime} <span className="n">{cityClock(data.location.utcOffsetSeconds)}</span></span>
         {provider.name === 'mock' && <span className="demo">{t.demo}</span>}
       </p>

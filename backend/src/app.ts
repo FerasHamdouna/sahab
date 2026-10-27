@@ -14,6 +14,7 @@ const schemas = {
   geocode: z.object({ q: z.string().trim().min(2).max(100), lang, limit: z.coerce.number().int().min(1).max(10).default(8) }),
   weather: z.object({ lat, lon }),
   reverse: z.object({ lat, lon, lang }),
+  place: z.object({ id: z.string().regex(/^om:\d{1,12}$/, 'expected om:<number>'), lang }),
 };
 
 function parse<T extends z.ZodType>(schema: T, query: unknown): z.infer<T> {
@@ -67,6 +68,12 @@ export function createApp({ service, cache, corsOrigins, rateLimitPerMin, trustP
   v1.get('/reverse', async (req, res) => {
     const { lat: la, lon: lo, lang: l } = parse(schemas.reverse, req.query);
     res.set('Cache-Control', 'public, max-age=86400').json(await service.reverse(la, lo, l));
+  });
+
+  // Same place, names in another language (the UI calls this when the language is switched).
+  v1.get('/place', async (req, res) => {
+    const { id, lang: l } = parse(schemas.place, req.query);
+    res.set('Cache-Control', 'public, max-age=86400').json(await service.lookup(Number(id.slice(3)), l));
   });
 
   app.use('/api/v1', v1);

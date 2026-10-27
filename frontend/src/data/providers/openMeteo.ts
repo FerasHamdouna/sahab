@@ -3,7 +3,12 @@ import { wmoToCondition } from '../wmo';
 
 const GEO = 'https://geocoding-api.open-meteo.com/v1/search';
 const FORECAST = 'https://api.open-meteo.com/v1/forecast';
+const GEO_GET = 'https://geocoding-api.open-meteo.com/v1/get';
 const REVERSE = 'https://api.bigdatacloud.net/data/reverse-geocode-client';
+
+/** Only the language-dependent fields: id and coordinates of the place the user picked never change. */
+export const pickNames = (p: Place): Pick<Place, 'name' | 'region' | 'country' | 'lang'> =>
+  ({ name: p.name, region: p.region, country: p.country, lang: p.lang });
 
 async function getJson<T>(url: string, signal?: AbortSignal): Promise<T> {
   let res: Response;
@@ -37,22 +42,33 @@ interface ForecastResponse {
   };
 }
 
+/** Country name in `lang` from its ISO code (lookup-by-id responses omit `country`). */
+export function countryName(code: string | undefined, lang: Lang): string {
+  if (!code) return '';
+  try { return new Intl.DisplayNames([lang], { type: 'region' }).of(code.toUpperCase()) ?? ''; } catch { return ''; }
+}
+
+function toPlace(r: GeoResult, lang: Lang): Place {
+  return {
+    id: `om:${r.id}`,
+    name: r.name,
+    region: r.admin1,
+    country: r.country || countryName(r.country_code, lang),
+    countryCode: (r.country_code ?? '').toUpperCase(),
+    lat: r.latitude,
+    lon: r.longitude,
+    timezone: r.timezone,
+    lang,
+  };
+}
+
 export const openMeteoProvider: WeatherProvider = {
   name: 'open-meteo',
 
   async geocode(query: string, lang: Lang): Promise<Place[]> {
     const url = `${GEO}?name=${encodeURIComponent(query)}&count=8&language=${lang}&format=json`;
     const j = await getJson<{ results?: GeoResult[] }>(url);
-    return (j.results ?? []).map((r) => ({
-      id: `om:${r.id}`,
-      name: r.name,
-      region: r.admin1,
-      country: r.country ?? '',
-      countryCode: (r.country_code ?? '').toUpperCase(),
-      lat: r.latitude,
-      lon: r.longitude,
-      timezone: r.timezone,
-    }));
+    return (j.results ?? []).map((r) => toPlace(r, lang));
   },
 
   async reverse(lat: number, lon: number, lang: Lang): Promise<Place> {
@@ -66,7 +82,21 @@ export const openMeteoProvider: WeatherProvider = {
       countryCode: (j.countryCode ?? '').toUpperCase(),
       lat,
       lon,
+      lang,
     };
+  },
+
+  async localize(place: Place, lang: Lang): Promise<Place> {
+    if (place.id.startsWith('om:')) {
+      const j = await getJson<Partial<GeoResult>>(`${GEO_GET}?id=${place.id.slice(3)}&language=${lang}`);
+      if (!j.id || !j.name) return place;
+      return { ...place, ...pickNames(toPlace(j as GeoResult, lang)) };
+    }
+    if (place.id.startsWith('geo:')) {
+      const p = await openMeteoProvider.reverse(place.lat, place.lon, lang);
+      return p.name ? { ...place, ...pickNames(p) } : place;
+    }
+    return place;
   },
 
   async weather(place: Place): Promise<WeatherData> {

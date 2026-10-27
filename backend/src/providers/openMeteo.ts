@@ -6,6 +6,8 @@ import { wmoToCondition } from './wmo.js';
 export interface WeatherProvider {
   readonly name: string;
   geocode(query: string, lang: Lang, limit: number): Promise<Place[]>;
+  /** One place by its provider id, with names in `lang` (used when the UI language changes). */
+  lookup(id: number, lang: Lang): Promise<Place>;
   reverse(lat: number, lon: number, lang: Lang): Promise<Place>;
   weather(lat: number, lon: number): Promise<Omit<WeatherResponse, 'meta'> & { meta: Omit<WeatherResponse['meta'], 'cached'> }>;
 }
@@ -14,6 +16,26 @@ export interface WeatherProvider {
 // hosts limit by IP, and free cloud plans (Render) share outbound IPs, so they often answer 429.
 const KEY = config.openMeteoApiKey;
 const GEO = KEY ? 'https://customer-geocoding-api.open-meteo.com/v1/search' : 'https://geocoding-api.open-meteo.com/v1/search';
+const GEO_GET = KEY ? 'https://customer-geocoding-api.open-meteo.com/v1/get' : 'https://geocoding-api.open-meteo.com/v1/get';
+
+/** Country name in the UI language from its ISO code (lookup-by-id responses omit `country`). */
+export function countryName(code: string | undefined, lang: Lang): string {
+  if (!code) return '';
+  try { return new Intl.DisplayNames([lang], { type: 'region' }).of(code.toUpperCase()) ?? ''; } catch { return ''; }
+}
+
+function toPlace(r: GeoResult, lang: Lang): Place {
+  return {
+    id: `om:${r.id}`,
+    name: r.name,
+    region: r.admin1,
+    country: r.country || countryName(r.country_code, lang),
+    countryCode: (r.country_code ?? '').toUpperCase(),
+    lat: r.latitude,
+    lon: r.longitude,
+    timezone: r.timezone,
+  };
+}
 const FORECAST = KEY ? 'https://customer-api.open-meteo.com/v1/forecast' : 'https://api.open-meteo.com/v1/forecast';
 const withKey = (url: string) => (KEY ? `${url}&apikey=${encodeURIComponent(KEY)}` : url);
 const REVERSE = 'https://api.bigdatacloud.net/data/reverse-geocode-client';
@@ -59,16 +81,13 @@ export const openMeteo: WeatherProvider = {
   async geocode(query, lang, limit) {
     const url = `${GEO}?name=${encodeURIComponent(query)}&count=${limit}&language=${lang}&format=json`;
     const j = await getJson<{ results?: GeoResult[] }>(withKey(url));
-    return (j.results ?? []).map((r) => ({
-      id: `om:${r.id}`,
-      name: r.name,
-      region: r.admin1,
-      country: r.country ?? '',
-      countryCode: (r.country_code ?? '').toUpperCase(),
-      lat: r.latitude,
-      lon: r.longitude,
-      timezone: r.timezone,
-    }));
+    return (j.results ?? []).map((r) => toPlace(r, lang));
+  },
+
+  async lookup(id, lang) {
+    const j = await getJson<Partial<GeoResult> & { error?: boolean }>(withKey(`${GEO_GET}?id=${id}&language=${lang}`));
+    if (!j.id || !j.name) throw new ApiError('LOCATION_NOT_FOUND', 'No place with this id');
+    return toPlace(j as GeoResult, lang);
   },
 
   async reverse(lat, lon, lang) {

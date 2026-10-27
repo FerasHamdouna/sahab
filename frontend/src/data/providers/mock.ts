@@ -39,7 +39,19 @@ const norm = (s: string) =>
 
 export function fixturePlace(f: Fixture, lang: Lang): Place {
   const [name, country] = f[lang];
-  return { id: `mock:${f.key}`, name, country, countryCode: f.cc, lat: f.lat, lon: f.lon };
+  return { id: `mock:${f.key}`, name, country, countryCode: f.cc, lat: f.lat, lon: f.lon, lang };
+}
+
+/**
+ * Demo cities carry both languages, so they rename without a request. Matches `mock:<key>`
+ * (mock provider) and `fx:<key>` (the ?debug panel's demo cities on real data).
+ */
+export function localizeFixture(place: Place, lang: Lang): Place | null {
+  const key = /^(mock|fx):(.+)$/.exec(place.id)?.[2];
+  const f = key && FIXTURES.find((x) => x.key === key);
+  if (!f) return null;
+  const [name, country] = f[lang];
+  return { ...place, name, country, lang };
 }
 
 const findFixture = (p: Place) =>
@@ -106,6 +118,10 @@ export const mockProvider: WeatherProvider = {
   async reverse(_lat, _lon, lang) {
     await delay(300);
     return { ...fixturePlace(FIXTURES[0], lang), id: 'geo:mock' };
+  },
+  async localize(place, lang) {
+    if (place.id === 'geo:mock') return { ...place, ...fixturePlace(FIXTURES[0], lang), id: place.id };
+    return localizeFixture(place, lang) ?? place;
   },
   async weather(place) {
     await delay(450);

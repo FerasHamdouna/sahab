@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
 import { provider, type Place, type WeatherData } from '../data';
-import { FIXTURES, fixturePlace } from '../data/providers/mock';
+import { FIXTURES, fixturePlace, localizeFixture } from '../data/providers/mock';
 import { cityNow, minutesOf, sunElevation } from '../data/time';
 import { useApp } from '../state/appStore';
 import { useSceneStore } from '../scene/state/sceneStore';
@@ -59,6 +59,33 @@ export function useGeocode(query: string) {
     staleTime: 24 * 60 * 60 * 1000,
     placeholderData: keepPreviousData,
   });
+}
+
+/**
+ * Keeps the shown place's name/region/country in the UI language. Runs when the language changes
+ * and when a place saved in another language is opened (e.g. picked in Arabic, viewed in English).
+ * Results are cached per place+language, so switching back and forth costs no extra requests.
+ */
+export function useLocalizedPlace() {
+  const qc = useQueryClient();
+  const lang = useApp((s) => s.lang);
+  const place = useApp((s) => s.place);
+  useEffect(() => {
+    if (!place || place.lang === lang) return;
+    let alive = true;
+    const fixture = localizeFixture(place, lang);
+    const job = fixture
+      ? Promise.resolve(fixture)
+      : qc.fetchQuery({ queryKey: ['place', provider.name, place.id, lang], queryFn: () => provider.localize(place, lang), staleTime: Infinity });
+    job
+      .then((p) => {
+        const current = useApp.getState().place;
+        if (!alive || current?.id !== p.id) return; // user moved on to another place meanwhile
+        useApp.getState().renamePlace({ ...p, lang });
+      })
+      .catch(() => { /* keep the old names; the weather itself is unaffected */ });
+    return () => { alive = false; };
+  }, [place, lang, qc]);
 }
 
 /** Re-renders every `ms` so live clocks and the sun position keep moving. */

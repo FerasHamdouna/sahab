@@ -3,7 +3,7 @@ import request from 'supertest';
 import { createApp } from '../src/app.js';
 import { createCache, MemoryLru } from '../src/cache/cache.js';
 import { createWeatherService } from '../src/weatherService.js';
-import { normalizeForecast, type ForecastResponse, type WeatherProvider } from '../src/providers/openMeteo.js';
+import { countryName, normalizeForecast, type ForecastResponse, type WeatherProvider } from '../src/providers/openMeteo.js';
 import { ApiError } from '../src/contract.js';
 
 function forecastFixture(): ForecastResponse {
@@ -38,6 +38,12 @@ function fakeProvider(overrides: Partial<WeatherProvider> = {}) {
     name: 'fake',
     geocode: vi.fn(async (q: string) => (q.toLowerCase().startsWith('am') ? [{ id: 'om:1', name: 'Amman', country: 'Jordan', countryCode: 'JO', lat: 31.95, lon: 35.94 }] : [])),
     reverse: vi.fn(async (lat: number, lon: number) => ({ id: 'geo:x', name: 'Amman', country: 'Jordan', countryCode: 'JO', lat, lon })),
+    lookup: vi.fn(async (id: number, lang: string) => {
+      if (id !== 250441) throw new ApiError('LOCATION_NOT_FOUND', 'No place with this id');
+      return lang === 'ar'
+        ? { id: 'om:250441', name: 'عمّان', country: 'الأردن', countryCode: 'JO', lat: 31.95, lon: 35.94 }
+        : { id: 'om:250441', name: 'Amman', country: 'Jordan', countryCode: 'JO', lat: 31.95, lon: 35.94 };
+    }),
     weather: vi.fn(async (lat: number, lon: number) => normalizeForecast(forecastFixture(), lat, lon)),
     ...overrides,
   };
@@ -123,6 +129,30 @@ describe('GET /api/v1/reverse', () => {
     const { app } = setup();
     const r = await request(app).get('/api/v1/reverse?lat=31.9512&lon=35.9441&lang=ar').expect(200);
     expect(r.body).toMatchObject({ name: 'Amman', lat: 31.9512, lon: 35.9441 });
+  });
+});
+
+describe('GET /api/v1/place', () => {
+  it('returns the same place with names in the requested language, cached per language', async () => {
+    const { app, provider } = setup();
+    expect((await request(app).get('/api/v1/place?id=om:250441&lang=en').expect(200)).body).toMatchObject({ id: 'om:250441', name: 'Amman', country: 'Jordan' });
+    expect((await request(app).get('/api/v1/place?id=om:250441&lang=ar').expect(200)).body).toMatchObject({ name: 'عمّان', country: 'الأردن' });
+    await request(app).get('/api/v1/place?id=om:250441&lang=en').expect(200);
+    expect(provider.lookup).toHaveBeenCalledTimes(2); // en, ar; the repeat came from cache
+  });
+
+  it('validates the id and reports unknown places as 404', async () => {
+    const { app } = setup();
+    expect((await request(app).get('/api/v1/place?id=geo:1,2&lang=en').expect(400)).body.error.code).toBe('BAD_REQUEST');
+    expect((await request(app).get('/api/v1/place?id=om:999&lang=en').expect(404)).body.error.code).toBe('LOCATION_NOT_FOUND');
+  });
+});
+
+describe('countryName', () => {
+  it('translates ISO country codes for lookup results', () => {
+    expect(countryName('PS', 'en')).toMatch(/Palestin/);
+    expect(countryName('jo', 'ar')).toBe('الأردن');
+    expect(countryName(undefined, 'en')).toBe('');
   });
 });
 

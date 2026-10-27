@@ -1,5 +1,5 @@
 import { ProviderError, type Place, type WeatherData, type WeatherProvider } from '../types';
-import { openMeteoProvider } from './openMeteo';
+import { openMeteoProvider, pickNames } from './openMeteo';
 
 // Same origin by default: Vite proxies /api to the backend in dev and preview.
 const ORIGIN = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '');
@@ -61,12 +61,25 @@ export const backendProvider: WeatherProvider = {
   name: 'backend',
   geocode(query, lang) {
     return withFallback(
-      async () => (await get<{ results: Place[] }>(`/geocode?q=${encodeURIComponent(query)}&lang=${lang}&limit=8`)).results,
+      async () => (await get<{ results: Place[] }>(`/geocode?q=${encodeURIComponent(query)}&lang=${lang}&limit=8`)).results.map((p) => ({ ...p, lang })),
       () => openMeteoProvider.geocode(query, lang),
     );
   },
   reverse(lat, lon, lang) {
-    return withFallback(() => get<Place>(`/reverse?lat=${lat}&lon=${lon}&lang=${lang}`), () => openMeteoProvider.reverse(lat, lon, lang));
+    return withFallback(
+      async () => ({ ...(await get<Place>(`/reverse?lat=${lat}&lon=${lon}&lang=${lang}`)), lang }),
+      () => openMeteoProvider.reverse(lat, lon, lang),
+    );
+  },
+  localize(place, lang) {
+    if (place.id.startsWith('geo:')) {
+      return backendProvider.reverse(place.lat, place.lon, lang).then((p) => (p.name ? { ...place, ...pickNames(p) } : place));
+    }
+    if (!place.id.startsWith('om:')) return Promise.resolve(place);
+    return withFallback(
+      async () => ({ ...place, ...pickNames({ ...(await get<Place>(`/place?id=${place.id}&lang=${lang}`)), lang }) }),
+      () => openMeteoProvider.localize(place, lang),
+    );
   },
   weather(place) {
     return withFallback(

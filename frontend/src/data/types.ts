@@ -13,6 +13,8 @@ export interface Place {
   lat: number;
   lon: number;
   timezone?: string;
+  /** Language `name`/`region`/`country` are in. Set by the frontend providers, not the API. */
+  lang?: Lang;
 }
 
 export interface CurrentWeather {
@@ -67,6 +69,8 @@ export interface WeatherProvider {
   geocode(query: string, lang: Lang): Promise<Place[]>;
   weather(place: Place): Promise<WeatherData>;
   reverse(lat: number, lon: number, lang: Lang): Promise<Place>;
+  /** The same place (same id and coordinates) with its names in `lang`. */
+  localize(place: Place, lang: Lang): Promise<Place>;
 }
 
 export class ProviderError extends Error {

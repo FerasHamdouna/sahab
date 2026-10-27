@@ -35,6 +35,10 @@ export function createWeatherService(provider: WeatherProvider, cache: Cache) {
       return (await cached(key, config.ttl.geocodeSec, () => provider.geocode(q.trim(), lang, limit))).value;
     },
 
+    async lookup(id: number, lang: Lang): Promise<Place> {
+      return (await cached(`place:${lang}:${id}`, config.ttl.reverseSec, () => provider.lookup(id, lang))).value;
+    },
+
     async reverse(lat: number, lon: number, lang: Lang): Promise<Place> {
       const key = `rev:${lang}:${coord(lat)}:${coord(lon)}`;
       const { value } = await cached(key, config.ttl.reverseSec, () => provider.reverse(lat, lon, lang));

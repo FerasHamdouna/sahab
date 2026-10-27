@@ -33,6 +33,8 @@ interface AppState {
   setUnits: (u: Units) => void;
   setSound: (on: boolean) => void;
   selectPlace: (p: Place, opts?: { geo?: boolean; remember?: boolean }) => void;
+  /** Same place, new names (language switch): updates it everywhere it's stored. */
+  renamePlace: (p: Place) => void;
   toggleHome: () => void;
   finishOnboarding: () => void;
   setLocating: (b: boolean) => void;
@@ -70,6 +72,16 @@ export const useApp = create<AppState>((set, get) => ({
     let homeNext = s.home;
     if (opts.geo && s.home?.geo) { homeNext = { ...p, geo: true }; storage.set('home', homeNext); }
     set({ place: p, recents, fromGeo: !!opts.geo, notice: null, home: homeNext });
+  },
+  renamePlace: (p) => {
+    const s = get();
+    const place = s.place?.id === p.id ? p : s.place;
+    const home = s.home?.id === p.id ? { ...p, geo: s.home.geo } : s.home;
+    const recents = s.recents.map((r) => (r.id === p.id ? p : r));
+    if (place?.id === p.id) storage.set('last', place);
+    if (home !== s.home) storage.set('home', home);
+    storage.set('recents', recents);
+    set({ place, home, recents });
   },
   toggleHome: () => {
     const { place, home: h, fromGeo } = get();
