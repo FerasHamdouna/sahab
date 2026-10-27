@@ -27,17 +27,23 @@ function SoundButton() {
   const [unlocked, setUnlocked] = useState(isAudioUnlocked());
   const unlockedAt = useRef(-1e9);
 
-  // Sound is on by default; browsers only allow it after the first gesture anywhere on the page.
+  // Sound is on by default, but browsers only allow audio to start inside a "user activation"
+  // gesture. On phones a touch pointerdown doesn't count; pointerup/touchend/click/keydown do.
   useEffect(() => {
+    const events = ['pointerup', 'touchend', 'click', 'keydown'] as const;
     const onGesture = () => {
-      if (!useApp.getState().sound) return;
-      if (!isAudioUnlocked()) unlockedAt.current = performance.now();
-      unlockAudio();
-      setUnlocked(true);
+      if (!useApp.getState().sound || isAudioUnlocked()) return;
+      unlockedAt.current = performance.now(); // this tap starts audio; it must not also toggle mute
+      void unlockAudio().then((ok) => { if (ok) setUnlocked(true); });
     };
-    addEventListener('pointerdown', onGesture, true);
-    addEventListener('keydown', onGesture, true);
-    return () => { removeEventListener('pointerdown', onGesture, true); removeEventListener('keydown', onGesture, true); };
+    // Phones suspend audio when the tab goes to the background; the next tap resumes it.
+    const onVisibility = () => { if (!document.hidden) setUnlocked(isAudioUnlocked()); };
+    events.forEach((e) => addEventListener(e, onGesture, true));
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      events.forEach((e) => removeEventListener(e, onGesture, true));
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, []);
 
   useEffect(() => { setSoundEnabled(sound); }, [sound]);
@@ -52,8 +58,10 @@ function SoundButton() {
       aria-pressed={sound}
       onClick={() => {
         if (performance.now() - unlockedAt.current < 800) return; // that tap only unlocked audio
-        setSound(!sound);
-        if (!sound) setUnlocked(true);
+        const next = !sound;
+        setSound(next);
+        setSoundEnabled(next); // now, not after render: unlockAudio below runs inside this click
+        if (next) void unlockAudio().then(setUnlocked);
       }}
     >
       <Icon name={sound ? 'vol' : 'volX'} size={20} />

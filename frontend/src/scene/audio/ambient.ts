@@ -72,20 +72,35 @@ function applyMaster() {
   master.gain.setTargetAtTime(on ? 0.42 : 0, ctx.currentTime, 0.4);
 }
 
-export function unlockAudio() {
-  if (!enabled) return;
+/**
+ * Must be called synchronously inside a gesture handler the browser counts as user activation
+ * (click, pointerup/touchend, keydown — not touch pointerdown). Resolves once audio is running.
+ */
+export async function unlockAudio(): Promise<boolean> {
+  if (!enabled) return false;
   if (!ctx) build();
-  if (ctx?.state === 'suspended') void ctx.resume();
+  if (!ctx) return false;
+  if (ctx.state !== 'running') {
+    try { await ctx.resume(); } catch { /* not a valid gesture: try again on the next one */ }
+  }
   applyMaster();
+  return ctx.state === 'running';
 }
 
+/**
+ * Only flips the preference. It never creates or resumes the AudioContext: that must happen inside
+ * a user gesture (`unlockAudio`), otherwise the browser leaves the context suspended for good.
+ */
 export function setSoundEnabled(on: boolean) {
   enabled = on;
-  if (on) unlockAudio();
   applyMaster();
 }
 
-export const isAudioUnlocked = () => ctx !== null;
+/** True only once the browser actually lets audio play. */
+export const isAudioUnlocked = () => ctx?.state === 'running';
+
+/** For the ?debug panel. */
+export const audioState = () => (ctx ? ctx.state : 'not started');
 
 /** Called from the render loop; throttled to ~8 Hz. */
 export function audioTick(now: number) {

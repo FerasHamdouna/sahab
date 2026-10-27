@@ -5,6 +5,7 @@ import { FIXTURES, fixturePlace } from '../../data/providers/mock';
 import { useApp, type DebugUi, type TimeOverride } from '../../state/appStore';
 import { useSceneStore, type Quality } from '../../scene/state/sceneStore';
 import { Icon, conditionIcon } from '../../ui/Icon';
+import { audioState } from '../../scene/audio/ambient';
 
 // Dev/review tool, shown with ?debug. Not part of the product UI, so it stays in Arabic.
 const SCENES: [Condition | null, string][] = [
@@ -72,7 +73,11 @@ export function ReviewPanel() {
             })}
           </div>
         </div>
-        <div className="rv-foot"><span className="n">{fps} fps · {quality}</span><span>مصدر البيانات: {provider.name}</span></div>
+        <div className="rv-foot">
+          <span className="n">{fps} fps · {quality}</span>
+          <span>الصوت: {audioState()}</span>
+          <span>مصدر البيانات: {provider.name}</span>
+        </div>
       </div>
     </details>
   );

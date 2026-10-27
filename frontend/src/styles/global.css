@@ -25,13 +25,14 @@
   color-scheme: dark;
 }
 *, *::before, *::after { box-sizing: border-box; }
-html, body { margin: 0; min-height: 100%; }
+/* `clip` (not `hidden`) on both: mobile browsers ignore body-only overflow-x, and in RTL any
+   left overflow becomes a sideways scroll that shifts the whole page. */
+html, body { margin: 0; min-height: 100%; overflow-x: clip; }
 body {
   color: var(--ink);
   font-family: var(--font-ui);
   font-size: 16px;
   line-height: 1.5;
-  overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
 }
 button, input { font: inherit; color: inherit; }
@@ -122,9 +123,20 @@ ul { list-style: none; }
 .lang-btn { font-weight: 600; font-size: 14px; }
 
 @container (max-width: 720px) {
-  .top { flex-wrap: wrap; }
-  .brand { flex: 1; }
+  /* row 1: brand + actions, row 2: full-width search */
+  .top { flex-wrap: wrap; row-gap: 12px; }
+  .brand { flex: 0 1 auto; min-width: 0; }
+  .actions { margin-inline-start: auto; }
   .search { order: 3; flex-basis: 100%; max-width: none; }
+}
+@container (max-width: 520px) {
+  .brand { font-size: 20px; gap: 8px; }
+  .brand-mark { width: 26px; height: 26px; }
+  .actions { gap: 6px; }
+  .icon-btn { width: 44px; height: 44px; }
+  .seg { height: 44px; padding: 3px; }
+  .seg button { min-width: 34px; padding-inline: 6px; }
+  .search input { height: 46px; }
 }
 
 /* ---------- notices ---------- */
@@ -139,6 +151,13 @@ ul { list-style: none; }
 .notice .body, .notice.body { color: var(--ink-2); font-size: 14px; }
 .notice.err .i { color: var(--danger); }
 .notice .btns { display: flex; gap: 8px; flex-wrap: wrap; }
+@container (max-width: 520px) {
+  /* two equal actions side by side, the dismiss link centred under them */
+  .notice .btns { width: 100%; display: grid; grid-template-columns: 1fr 1fr; }
+  .notice .btn { justify-content: center; padding-inline: 10px; white-space: nowrap; font-size: 13px; }
+  .notice .btn:only-child { grid-column: 1 / -1; }
+  .notice .btn.ghost { grid-column: 1 / -1; height: 36px; }
+}
 .btn {
   height: 44px; padding-inline: 16px; border-radius: 12px; border: 1px solid var(--line);
   background: rgba(255,255,255,.08); display: inline-flex; align-items: center; gap: 8px; font-size: 14px;
@@ -159,7 +178,8 @@ ul { list-style: none; }
 /* ---------- hero ---------- */
 .hero { position: relative; isolation: isolate; padding-block: 28px 4px; text-shadow: var(--shadow-text); display: flex; flex-direction: column; gap: 6px; }
 .hero::before {
-  content: ""; position: absolute; inset: -30px -80px -30px -40px; z-index: -1; pointer-events: none;
+  /* stays inside the 16px page gutter so it can never widen the page */
+  content: ""; position: absolute; inset-block: -30px; inset-inline: -12px; z-index: -1; pointer-events: none;
   background: radial-gradient(closest-side, rgba(8, 12, 22, var(--scrim)), rgba(8, 12, 22, 0));
 }
 .place { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
